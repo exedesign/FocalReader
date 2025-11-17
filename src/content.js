@@ -64,6 +64,13 @@
         #spritz-dropzone-content div:first-child{font-size:64px;margin-bottom:20px;}
         #spritz-dropzone-content div:nth-child(2){font-size:20px;margin-bottom:10px;}
         #spritz-dropzone-content div:last-child{font-size:16px;color:#aaa;}
+        #spritz-loading-status{text-align:center;color:#fff;padding:20px;}
+        #spritz-loading-icon{font-size:48px;margin-bottom:15px;}
+        #spritz-loading-text{font-size:18px;font-weight:600;margin-bottom:10px;}
+        #spritz-loading-detail{font-size:14px;color:#aaa;margin-bottom:15px;}
+        #spritz-loading-progress{width:300px;height:8px;background:#333;border-radius:4px;margin:0 auto;position:relative;overflow:hidden;}
+        #spritz-loading-progress-bar{height:100%;background:linear-gradient(90deg,#007bff,#0056b3);border-radius:4px;width:0%;transition:width 0.3s ease-out;position:relative;}
+        #spritz-loading-progress-bar::after{content:attr(data-percent);position:absolute;right:5px;top:50%;transform:translateY(-50%);color:#fff;font-size:10px;font-weight:600;text-shadow:1px 1px 2px rgba(0,0,0,0.8);}
       `;
       document.head.appendChild(style);
     }
@@ -721,9 +728,6 @@
     // Orijinal metni sakla
     player.originalText = text;
     
-    // PDF markerlarını temizle (web sayfası için)
-    player.pdfPageBoundaries = [];
-    
     // Metni cümlelere ayır ve filtrele
     console.log('🌐 Web metni filtreleniyor...');
     const sentences = text.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 0);
@@ -736,6 +740,9 @@
     
     const filteredText = filteredSentences.join('. ');
     player.filteredText = filteredText;
+    
+    // Web içeriği için sayfa markerları oluştur (250 kelime = 1 sayfa)
+    player.calculateWebPageBoundaries(filteredText);
     
     // UI hazır olana kadar kısa gecikme
     setTimeout(() => {
@@ -1460,6 +1467,28 @@
       return wordBoundaries;
     }
     
+    calculateWebPageBoundaries(text) {
+      // Web içeriği için sayfa sınırları oluştur
+      // Her 250 kelime yaklaşık 1 dakikalık okuma = 1 "sayfa"
+      const WORDS_PER_PAGE = 250;
+      
+      const words = text.split(/\s+/).filter(w => w.length > 0);
+      const totalWords = words.length;
+      const pageCount = Math.ceil(totalWords / WORDS_PER_PAGE);
+      
+      console.log(`📄 Web içeriği ${pageCount} sayfaya bölünüyor (${totalWords} kelime)`);
+      
+      this.pdfPageBoundaries = [];
+      
+      // Her sayfa sınırını hesapla (ilk sayfa hariç)
+      for (let i = 1; i < pageCount; i++) {
+        const wordIndex = i * WORDS_PER_PAGE;
+        this.pdfPageBoundaries.push(Math.min(wordIndex, totalWords - 1));
+      }
+      
+      console.log('✅ Web sayfa sınırları:', this.pdfPageBoundaries);
+    }
+    
     renderPageMarkers() {
       if (!this.progressFill || this.pdfPageBoundaries.length === 0 || this.words.length === 0) {
         return;
@@ -1523,11 +1552,6 @@
       }
       this.isPlaying = true;
       console.log('✅ Oynatma başladı');
-      
-      // Progress text'i gizle
-      if (this.progressText) {
-        this.progressText.style.display = 'none';
-      }
       
       this.restartInterval();
     }
