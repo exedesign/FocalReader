@@ -130,13 +130,22 @@
     </div>
     
     <div class="setting-group">
-      <h3>📄 PDF Metin Temizleme</h3>
+      <h3>📄 PDF Ayarları</h3>
       
       <label>
         <input type="checkbox" id="enable-pdf-cleanup" style="width:auto;margin:0 5px 0 0;">
         Türkçe Karakter Düzeltmeyi Etkinleştir
         <small>• PDF'lerdeki "u ş ak" → "uşak", "aya ğ a" → "ayağa" gibi hataları düzeltir<br>
         • Varsayılan: Açık</small>
+      </label>
+      
+      <label>
+        <input type="checkbox" id="enable-ocr" style="width:auto;margin:0 5px 0 0;">
+        Tesseract OCR'ı Etkinleştir (Taranmış PDF'ler için)
+        <small>• Metin içermeyen (görüntü) PDF'lerde OCR ile metin çıkarır<br>
+        • Tesseract.js kullanır (Türkçe dil desteği)<br>
+        • Yavaş olabilir, sadece gerektiğinde açın<br>
+        • Varsayılan: Kapalı</small>
       </label>
     </div>
     
