@@ -130,48 +130,13 @@
     </div>
     
     <div class="setting-group">
-      <h3>📄 PDF Ayarları</h3>
-      
-      <label>PDF Kütüphanesi:
-        <select id="pdf-library">
-          <option value="pdfjs">PDF.js (Mozilla - Tavsiye Edilen)</option>
-          <option value="native">Native Chrome PDF Viewer</option>
-        </select>
-        <small>• <strong>PDF.js:</strong> Güvenilir, açık kaynak, tam kontrol (varsayılan)<br>
-        • <strong>Native Chrome:</strong> Tarayıcı yerleşik görüntüleyici (deneysel)</small>
-      </label>
-      
-      <label>PDF.js Metin Çıkarma Modu:
-        <select id="pdf-extraction-method">
-          <option value="standard">Standart (textContent)</option>
-          <option value="enhanced">Gelişmiş (normalizeWhitespace)</option>
-          <option value="raw">Ham Metin (işlenmemiş)</option>
-          <option value="structural">Yapısal (position based)</option>
-        </select>
-        <small>• <strong>Standart:</strong> Normal PDF.js metin çıkarma (varsayılan)<br>
-        • <strong>Gelişmiş:</strong> Boşluk normalizasyonu ile daha temiz<br>
-        • <strong>Ham Metin:</strong> Filtresiz ham çıktı<br>
-        • <strong>Yapısal:</strong> X/Y pozisyonuna göre sıralama (karmaşık düzenler için)</small>
-      </label>
+      <h3>📄 PDF Metin Temizleme</h3>
       
       <label>
         <input type="checkbox" id="enable-pdf-cleanup" style="width:auto;margin:0 5px 0 0;">
-        PDF Metin Temizlemeyi Etkinleştir
-      </label>
-      
-      <label>Temizleme Regex Kalıbı:
-        <input type="text" id="pdf-cleanup-regex" placeholder="([a-zğüşıöç]+)\s+([ğüşıöçĞÜŞİÖÇ])\s+([a-zğüşıöç]+)">
-        <small>• Türkçe karakter etrafındaki boşlukları temizler<br>
-        • Örnek: "u ş ak" → "uşak", "aya ğ a" → "ayağa"<br>
-        • Regex değiştirilebilir (ileri düzey kullanıcılar için)<br>
-        • Boş bırakılırsa temizleme devre dışı kalır</small>
-      </label>
-      
-      <label>Temizleme Replacement:
-        <input type="text" id="pdf-cleanup-replacement" placeholder="$1$2$3" value="$1$2$3">
-        <small>• Regex yakalama gruplarını nasıl birleştireceğinizi belirler<br>
-        • $1 = ilk grup, $2 = ikinci grup, $3 = üçüncü grup<br>
-        • Varsayılan: $1$2$3 (boşluksuz birleştir)</small>
+        Türkçe Karakter Düzeltmeyi Etkinleştir
+        <small>• PDF'lerdeki "u ş ak" → "uşak", "aya ğ a" → "ayağa" gibi hataları düzeltir<br>
+        • Varsayılan: Açık</small>
       </label>
     </div>
     
