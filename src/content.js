@@ -692,16 +692,21 @@
       await player.loadSettings();
     }
     
+    // Orijinal metni sakla
+    player.originalText = text;
+    
     // Metni cümlelere ayır ve filtrele
     console.log('🌐 Web metni filtreleniyor...');
     const sentences = text.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 0);
     console.log(`📋 Toplam ${sentences.length} cümle bulundu`);
+    console.log('🔍 excludeWords değeri:', player.excludeWords);
     
     const filteredSentences = player.filterSentences(sentences);
     const excludedCount = sentences.length - filteredSentences.length;
     console.log(`✅ ${filteredSentences.length} cümle kaldı (${excludedCount} cümle hariç tutuldu)`);
     
     const filteredText = filteredSentences.join('. ');
+    player.filteredText = filteredText;
     
     // UI hazır olana kadar kısa gecikme
     setTimeout(() => {
@@ -724,6 +729,8 @@
       this.isPlaying = false;
       this.displayEl = null;
       this.settingsLoaded = false;
+      this.originalText = ''; // Orijinal metin (filtrelenmemiş)
+      this.filteredText = ''; // Filtrelenmiş metin
       this.loadSettings(); // Ayarları yükle
     }
     
@@ -784,6 +791,7 @@
             <option value="2">2x</option>
           </select>
           <button id="spritz-upload" type="button" title="PDF Yükle">📄 PDF</button>
+          <button id="spritz-preview" type="button" title="Metin Önizle">📝</button>
           <button id="spritz-close" type="button" title="Kapat">✕</button>
         </div>
         <div id="spritz-dropzone" style="display: none;">
@@ -798,6 +806,23 @@
             <div id="spritz-loading-detail"></div>
             <div id="spritz-loading-progress">
               <div id="spritz-loading-progress-bar"></div>
+            </div>
+          </div>
+        </div>
+        <div id="spritz-text-preview" style="display: none;">
+          <div id="spritz-preview-content">
+            <div id="spritz-preview-header">
+              <h3>📝 Metin Önizleme</h3>
+              <button id="spritz-preview-close" type="button">✕</button>
+            </div>
+            <div id="spritz-preview-stats"></div>
+            <div id="spritz-preview-tabs">
+              <button class="preview-tab active" data-tab="original">📄 Orijinal Metin</button>
+              <button class="preview-tab" data-tab="filtered">✅ Filtrelenmiş Metin</button>
+            </div>
+            <div id="spritz-preview-body">
+              <div class="preview-tab-content active" data-content="original"></div>
+              <div class="preview-tab-content" data-content="filtered"></div>
             </div>
           </div>
         </div>
@@ -826,6 +851,12 @@
       
       // PDF Upload butonu
       this.container.querySelector('#spritz-upload').addEventListener('click', ()=>this.showDropzone());
+      
+      // Metin önizleme butonu
+      this.container.querySelector('#spritz-preview').addEventListener('click', ()=>this.showTextPreview());
+      
+      // Metin önizleme butonu
+      this.container.querySelector('#spritz-preview').addEventListener('click', ()=>this.showTextPreview());
       
       // Progress bar click handler
       this.container.querySelector('#spritz-progress-bar').addEventListener('click', (e) => {
@@ -1058,6 +1089,9 @@
           console.log('🎯 Metin ayarlanıyor ve oynatma başlatılıyor...');
           console.log('📝 İlk 100 karakter:', fullText.trim().substring(0, 100));
           
+          // Orijinal metni sakla
+          this.originalText = fullText.trim();
+          
           this.updateLoadingProgress(87, '✓ Metin çıkarma tamamlandı');
           this.showLoadingStatus(
             '📦 Adım 6/7: Metin işleniyor...', 
@@ -1069,15 +1103,16 @@
           
           // Metni cümlelere ayır ve filtrele
           console.log('📖 Metin cümlelere ayrılıyor...');
-          const sentences = fullText.trim().split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 0);
+          const sentences = this.originalText.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 0);
           console.log(`📋 Toplam ${sentences.length} cümle bulundu`);
+          console.log('🔍 excludeWords değeri:', this.excludeWords);
           
           const filteredSentences = this.filterSentences(sentences);
           console.log(`✅ ${filteredSentences.length} cümle kaldı (${sentences.length - filteredSentences.length} cümle hariç tutuldu)`);
           
-          // Filtrelenmiş metni setText'e gönder
-          const filteredText = filteredSentences.join('. ');
-          this.setText(filteredText);
+          // Filtrelenmiş metni sakla ve setText'e gönder
+          this.filteredText = filteredSentences.join('. ');
+          this.setText(this.filteredText);
           
           await this.sleep(300);
           const excludedCount = sentences.length - filteredSentences.length;
@@ -1342,6 +1377,158 @@
       console.log('⏪ ' + count + ' kelime geri');
       
       if(wasPlaying) this.play();
+    }
+    
+    showTextPreview() {
+      const previewModal = this.container.querySelector('#spritz-text-preview');
+      if (!previewModal) return;
+      
+      if (!this.originalText && !this.filteredText) {
+        alert('📝 Henüz metin yüklenmedi!\n\nBir PDF yükleyin veya web sayfasından metin okutun.');
+        return;
+      }
+      
+      // İstatistikleri hesapla
+      const originalSentences = this.originalText.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
+      const filteredSentences = this.filteredText.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
+      const excludedSentences = originalSentences - filteredSentences;
+      const originalWords = this.originalText.split(/\s+/).filter(w => w.trim().length > 0).length;
+      const filteredWords = this.words.length;
+      
+      // Stats güncelle
+      const statsEl = this.container.querySelector('#spritz-preview-stats');
+      if (statsEl) {
+        statsEl.innerHTML = `
+          <div class="stat-item">
+            <span class="stat-label">📄 Orijinal:</span>
+            <span class="stat-value">${originalSentences.toLocaleString()} cümle, ${originalWords.toLocaleString()} kelime</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">✅ Filtrelenmiş:</span>
+            <span class="stat-value">${filteredSentences.toLocaleString()} cümle, ${filteredWords.toLocaleString()} kelime</span>
+          </div>
+          <div class="stat-item ${excludedSentences > 0 ? 'stat-excluded' : ''}">
+            <span class="stat-label">🚫 Hariç tutulan:</span>
+            <span class="stat-value">${excludedSentences.toLocaleString()} cümle (${originalWords - filteredWords} kelime)</span>
+          </div>
+        `;
+      }
+      
+      // Metin içeriklerini güncelle
+      const originalContent = this.container.querySelector('.preview-tab-content[data-content="original"]');
+      const filteredContent = this.container.querySelector('.preview-tab-content[data-content="filtered"]');
+      
+      if (originalContent) {
+        originalContent.textContent = this.originalText || 'Metin bulunamadı';
+      }
+      if (filteredContent) {
+        filteredContent.textContent = this.filteredText || 'Metin bulunamadı';
+      }
+      
+      // Tab değiştirme event listener'ı
+      const tabs = this.container.querySelectorAll('.preview-tab');
+      tabs.forEach(tab => {
+        tab.addEventListener('click', (e) => {
+          const tabName = e.target.getAttribute('data-tab');
+          
+          // Aktif tab'i güncelle
+          tabs.forEach(t => t.classList.remove('active'));
+          e.target.classList.add('active');
+          
+          // İçeriği göster
+          const contents = this.container.querySelectorAll('.preview-tab-content');
+          contents.forEach(c => c.classList.remove('active'));
+          const targetContent = this.container.querySelector(`.preview-tab-content[data-content="${tabName}"]`);
+          if (targetContent) targetContent.classList.add('active');
+        });
+      });
+      
+      // Kapat butonu
+      const closeBtn = this.container.querySelector('#spritz-preview-close');
+      if (closeBtn) {
+        closeBtn.onclick = () => {
+          previewModal.style.display = 'none';
+        };
+      }
+      
+      // Modal'ı göster
+      previewModal.style.display = 'flex';
+    }
+    
+    showTextPreview() {
+      const previewModal = this.container.querySelector('#spritz-text-preview');
+      if (!previewModal) return;
+      
+      if (!this.originalText && !this.filteredText) {
+        alert('📝 Henüz metin yüklenmedi!\n\nBir PDF yükleyin veya web sayfasından metin okutun.');
+        return;
+      }
+      
+      // İstatistikleri hesapla
+      const originalSentences = this.originalText.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
+      const filteredSentences = this.filteredText.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
+      const excludedSentences = originalSentences - filteredSentences;
+      const originalWords = this.originalText.split(/\s+/).filter(w => w.trim().length > 0).length;
+      const filteredWords = this.words.length;
+      
+      // Stats güncelle
+      const statsEl = this.container.querySelector('#spritz-preview-stats');
+      if (statsEl) {
+        statsEl.innerHTML = `
+          <div class="stat-item">
+            <span class="stat-label">📄 Orijinal:</span>
+            <span class="stat-value">${originalSentences.toLocaleString()} cümle, ${originalWords.toLocaleString()} kelime</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">✅ Filtrelenmiş:</span>
+            <span class="stat-value">${filteredSentences.toLocaleString()} cümle, ${filteredWords.toLocaleString()} kelime</span>
+          </div>
+          <div class="stat-item ${excludedSentences > 0 ? 'stat-excluded' : ''}">
+            <span class="stat-label">🚫 Hariç tutulan:</span>
+            <span class="stat-value">${excludedSentences.toLocaleString()} cümle (${originalWords - filteredWords} kelime)</span>
+          </div>
+        `;
+      }
+      
+      // Metin içeriklerini güncelle
+      const originalContent = this.container.querySelector('.preview-tab-content[data-content="original"]');
+      const filteredContent = this.container.querySelector('.preview-tab-content[data-content="filtered"]');
+      
+      if (originalContent) {
+        originalContent.textContent = this.originalText || 'Metin bulunamadı';
+      }
+      if (filteredContent) {
+        filteredContent.textContent = this.filteredText || 'Metin bulunamadı';
+      }
+      
+      // Tab değiştirme event listener'ı
+      const tabs = this.container.querySelectorAll('.preview-tab');
+      tabs.forEach(tab => {
+        tab.addEventListener('click', (e) => {
+          const tabName = e.target.getAttribute('data-tab');
+          
+          // Aktif tab'i güncelle
+          tabs.forEach(t => t.classList.remove('active'));
+          e.target.classList.add('active');
+          
+          // İçeriği göster
+          const contents = this.container.querySelectorAll('.preview-tab-content');
+          contents.forEach(c => c.classList.remove('active'));
+          const targetContent = this.container.querySelector(`.preview-tab-content[data-content="${tabName}"]`);
+          if (targetContent) targetContent.classList.add('active');
+        });
+      });
+      
+      // Kapat butonu
+      const closeBtn = this.container.querySelector('#spritz-preview-close');
+      if (closeBtn) {
+        closeBtn.onclick = () => {
+          previewModal.style.display = 'none';
+        };
+      }
+      
+      // Modal'ı göster
+      previewModal.style.display = 'flex';
     }
     
     setSpeedMultiplier(multiplier){
