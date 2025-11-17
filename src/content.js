@@ -48,9 +48,10 @@
         .spritz-pivot{color:#ffdd44;font-weight:700;}
         .spritz-right{color:#888;}
         #spritz-progress-container{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);width:400px;text-align:center;z-index:999999;pointer-events:auto;}
-        #spritz-progress-bar{width:100%;height:6px;background:#333;border-radius:3px;cursor:pointer;position:relative;overflow:hidden;margin-bottom:8px;pointer-events:auto;}
-        #spritz-progress-fill{height:100%;background:linear-gradient(90deg,#007bff,#0056b3);border-radius:3px;width:0%;transition:width 0.1s ease-out;pointer-events:none;}
-        #spritz-progress-text{color:#aaa;font-size:12px;font-weight:normal;margin-top:5px;pointer-events:none;}
+        #spritz-progress-bar{width:100%;height:8px;background:#333;border-radius:4px;cursor:pointer;position:relative;overflow:visible;margin-bottom:5px;pointer-events:auto;}
+        #spritz-progress-fill{height:100%;background:linear-gradient(90deg,#007bff,#0056b3);border-radius:4px;width:0%;transition:width 0.1s ease-out;pointer-events:none;position:relative;}
+        .pdf-page-marker{position:absolute;top:0;width:2px;height:100%;background:#ffc107;opacity:0.8;pointer-events:none;}
+        #spritz-progress-text{color:#fff;font-size:13px;font-weight:600;margin-top:3px;pointer-events:none;text-shadow:1px 1px 2px rgba(0,0,0,0.8);}
         #spritz-controls{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);text-align:center;padding:15px 25px;background:rgba(0,0,0,0.8);border-radius:8px;border:none;z-index:999999;pointer-events:auto;}
         #spritz-controls button{margin:0 8px;padding:8px 12px;background:#222;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;}
         #spritz-controls button:hover{background:#444;}
@@ -447,15 +448,17 @@
       
       let fullText = '';
       
-      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
         console.log(`Processing page ${pageNum}/${pdf.numPages}`);
         const page = await pdf.getPage(pageNum);
         const textContent = await page.getTextContent();
-        const pageText = textContent.items.map(item => item.str).join(' ');
+        // Türkçe karakterleri normalize et (NFD -> NFC)
+        const pageText = textContent.items.map(item => {
+          const str = item.str || '';
+          return str.normalize('NFC'); // Türkçe karakterleri doğru formatta al
+        }).join(' ');
         fullText += pageText + ' ';
-      }
-      
-      console.log('Text extraction completed, total length:', fullText.length);
+      }      console.log('Text extraction completed, total length:', fullText.length);
       return fullText.trim();
       
     } catch (error) {
@@ -695,6 +698,9 @@
     // Orijinal metni sakla
     player.originalText = text;
     
+    // PDF markerlarını temizle (web sayfası için)
+    player.pdfPageBoundaries = [];
+    
     // Metni cümlelere ayır ve filtrele
     console.log('🌐 Web metni filtreleniyor...');
     const sentences = text.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 0);
@@ -722,6 +728,7 @@
       this.wpm = 250; // Varsayılan, ayarlardan yüklenir
       this.selectedFont = 'georgia'; // Varsayılan font
       this.excludeWords = ''; // Hariç tutulacak kelimeler
+      this.cleanPDFText = true; // PDF metin temizleme (varsayılan: açık)
       this.speedMultiplier = 1; // Hız çarpanı
       this.interval = null;
       this.words = [];
@@ -731,18 +738,20 @@
       this.settingsLoaded = false;
       this.originalText = ''; // Orijinal metin (filtrelenmemiş)
       this.filteredText = ''; // Filtrelenmiş metin
+      this.pdfPageBoundaries = []; // PDF sayfa sınırları (kelime indexleri)
       this.loadSettings(); // Ayarları yükle
     }
     
     // Kullanıcı ayarlarını yükle
     async loadSettings(){
       return new Promise((resolve) => {
-        chrome.storage.sync.get(['defaultWPM', 'selectedFont', 'excludeWords'], (res) => {
+        chrome.storage.sync.get(['defaultWPM', 'selectedFont', 'excludeWords', 'cleanPDFText'], (res) => {
           this.wpm = res.defaultWPM || 250;
           this.selectedFont = res.selectedFont || 'georgia';
           this.excludeWords = res.excludeWords || '';
+          this.cleanPDFText = res.cleanPDFText !== false; // Varsayılan: true
           this.settingsLoaded = true;
-          console.log('📋 Ayarlar yüklendi - WPM:', this.wpm, 'excludeWords:', this.excludeWords ? `"${this.excludeWords}"` : '(boş)');
+          console.log('📋 Ayarlar yüklendi - WPM:', this.wpm, 'cleanPDFText:', this.cleanPDFText, 'excludeWords:', this.excludeWords ? `"${this.excludeWords}"` : '(boş)');
           this.setupUI(); // UI'yi ayarlarla birlikte kur
           resolve();
         });
@@ -774,7 +783,7 @@
           <div id="spritz-progress-bar">
             <div id="spritz-progress-fill"></div>
           </div>
-          <div id="spritz-progress-text" style="display: none;">0%</div>
+          <div id="spritz-progress-text">0%</div>
         </div>
         <div id="spritz-controls">
           <button id="spritz-start" type="button" title="Başa sar">⏮️</button>
@@ -1068,15 +1077,26 @@
         this.showLoadingStatus('✅ Adım 4/7: PDF analiz tamamlandı', `${pdf.numPages} sayfa bulundu`);
         
         let fullText = '';
+        let pageBoundaries = []; // Her sayfanın başladığı karakter indexi
         await this.sleep(400);
         console.log('📄 Sayfalar işleniyor...');
         this.showLoadingStatus('📄 Adım 5/7: Sayfalardan metin çıkarılıyor...', `0/${pdf.numPages} sayfa işlendi`);
         
         for (let i = 1; i <= pdf.numPages; i++) {
           console.log(`   Sayfa ${i}/${pdf.numPages} işleniyor...`);
+          
+          // Bu sayfanın başladığı karakter indexini kaydet
+          if (i > 1) { // İlk sayfa zaten 0'dan başlar
+            pageBoundaries.push(fullText.length);
+          }
+          
           const page = await pdf.getPage(i);
           const textContent = await page.getTextContent();
-          const pageText = textContent.items.map(item => item.str).join(' ');
+          // Türkçe karakterleri normalize et (NFD -> NFC)
+          const pageText = textContent.items.map(item => {
+            const str = item.str || '';
+            return str.normalize('NFC'); // Türkçe karakterleri doğru formatta al
+          }).join(' ');
           console.log(`   ✅ Sayfa ${i} - ${pageText.length} karakter`);
           fullText += pageText + ' ';
           
@@ -1098,10 +1118,14 @@
         if (fullText && fullText.trim().length > 10) {
           await this.sleep(400);
           console.log('🎯 Metin ayarlanıyor ve oynatma başlatılıyor...');
-          console.log('📝 İlk 100 karakter:', fullText.trim().substring(0, 100));
+          console.log('📝 İlk 100 karakter (ham):', fullText.trim().substring(0, 100));
+          
+          // PDF metni temizle (eğer ayar açıksa)
+          const cleanedText = this.cleanPDFTextContent(fullText.trim());
+          console.log('📝 İlk 100 karakter (temiz):', cleanedText.substring(0, 100));
           
           // Orijinal metni sakla
-          this.originalText = fullText.trim();
+          this.originalText = cleanedText;
           
           this.updateLoadingProgress(87, '✓ Metin çıkarma tamamlandı');
           this.showLoadingStatus(
@@ -1124,6 +1148,14 @@
           // Filtrelenmiş metni sakla ve setText'e gönder
           this.filteredText = filteredSentences.join('. ');
           this.setText(this.filteredText);
+          
+          // PDF sayfa sınırlarını kelime indexlerine çevir
+          console.log('📊 PDF sayfa sınırları hesaplanıyor...');
+          this.pdfPageBoundaries = this.calculatePageBoundaries(pageBoundaries, fullText.trim(), cleanedText);
+          console.log('✅ Sayfa sınırları:', this.pdfPageBoundaries);
+          
+          // İlerleme çubuğuna sayfa markerlarını ekle
+          this.renderPageMarkers();
           
           await this.sleep(300);
           const excludedCount = sentences.length - filteredSentences.length;
@@ -1194,6 +1226,11 @@
       
       console.log('✅ HAZIR! Toplam kelime:', this.words.length)
       
+      // PDF markerlarını güncelle (eğer PDF ise)
+      if (this.pdfPageBoundaries && this.pdfPageBoundaries.length > 0) {
+        this.renderPageMarkers();
+      }
+      
       // İlk kelimeyi göster ve progress'i başlat
       if (this.words.length > 0) {
         console.log('📝 İlk kelime gösteriliyor:', this.words[0]);
@@ -1201,6 +1238,67 @@
       } else {
         console.error('❌ Kelime bulunamadı!');
       }
+    }
+    
+    cleanPDFTextContent(text) {
+      if (!this.cleanPDFText) {
+        console.log('🔧 PDF temizleme kapalı, orijinal metin kullanılıyor');
+        return text;
+      }
+      
+      console.log('🧹 PDF metni temizleniyor...');
+      console.log('   Orijinal uzunluk:', text.length);
+      
+      let cleaned = text;
+      
+      // 1. Satır sonu tire birleştirmeleri (Türkçe kelimeler için)
+      // "ke- lime" -> "kelime"
+      cleaned = cleaned.replace(/(\w+)-\s+(\w+)/g, '$1$2');
+      console.log('   ✓ Tire birleştirme yapıldı');
+      
+      // 2. Fazla boşlukları temizle (2+ boşluk -> 1 boşluk)
+      cleaned = cleaned.replace(/\s{2,}/g, ' ');
+      console.log('   ✓ Fazla boşluklar temizlendi');
+      
+      // 3. Kelime içi boşlukları düzelt (örn: "k e l i m e" -> "kelime")
+      // Türkçe karakterler dahil: a-zğüşıöçA-ZĞÜŞİÖÇ
+      cleaned = cleaned.replace(/\b([a-zğüşıöçA-ZĞÜŞİÖÇ])\s+([a-zğüşıöçA-ZĞÜŞİÖÇ])\b/g, (match, char1, char2) => {
+        // Sadece tek harf + tek harf durumlarını birleştir
+        return char1 + char2;
+      });
+      console.log('   ✓ Kelime içi boşluklar düzeltildi');
+      
+      // 4. Tek başına kalmış harfleri temizle (opsiyonel - dikkatli kullan)
+      // Cümle başı ve sonu hariç tek harfleri temizle
+      cleaned = cleaned.replace(/\s+([a-zğüşıöçA-ZĞÜŞİÖÇ])\s+/g, ' ');
+      console.log('   ✓ Tek başına harfler temizlendi');
+      
+      // 5. Noktalama işaretleri öncesi fazla boşlukları temizle
+      cleaned = cleaned.replace(/\s+([.,!?;:])/g, '$1');
+      console.log('   ✓ Noktalama boşlukları düzeltildi');
+      
+      // 6. Cümle başı boşlukları ve trim
+      cleaned = cleaned.trim();
+      cleaned = cleaned.replace(/([.!?])\s+/g, '$1 '); // Cümle sonrası tek boşluk
+      console.log('   ✓ Cümle boşlukları normalize edildi');
+      
+      // 7. Türkçe karakter düzeltmeleri (yaygın PDF sorunları)
+      const turkishFixes = {
+        'Ä±': 'ı', 'Ä°': 'İ', 'Å\u009f': 'ş', 'Åž': 'Ş',
+        'Ã§': 'ç', 'Ã\u0087': 'Ç', 'Ã¼': 'ü', 'Ãœ': 'Ü',
+        'Ã¶': 'ö', 'Ã\u0096': 'Ö', 'ÄŸ': 'ğ', 'Äž': 'Ğ'
+      };
+      
+      Object.keys(turkishFixes).forEach(wrong => {
+        const regex = new RegExp(wrong, 'g');
+        cleaned = cleaned.replace(regex, turkishFixes[wrong]);
+      });
+      console.log('   ✓ Türkçe karakter düzeltmeleri yapıldı');
+      
+      console.log('   Temizlenmiş uzunluk:', cleaned.length);
+      console.log('   Kazanılan:', (text.length - cleaned.length), 'karakter');
+      
+      return cleaned;
     }
     
     filterSentences(sentences) {
@@ -1293,6 +1391,52 @@
         this.progressFill.style.width = percentage + '%';
         this.progressText.textContent = Math.round(percentage) + '%';
       }
+    }
+    
+    calculatePageBoundaries(charBoundaries, originalText, cleanedText) {
+      // Karakter indexlerinden kelime indexlerine çevirme
+      // cleanedText üzerinden kelimelere ayırıyoruz
+      if (!charBoundaries || charBoundaries.length === 0) {
+        return [];
+      }
+      
+      const words = cleanedText.split(/\s+/).filter(w => w.length > 0);
+      const wordBoundaries = [];
+      
+      // Her sayfa sınırı için yaklaşık kelime indexini hesapla
+      // Basit yaklaşım: karakter oranı = kelime oranı
+      const charToWordRatio = words.length / cleanedText.length;
+      
+      for (const charIndex of charBoundaries) {
+        const wordIndex = Math.round(charIndex * charToWordRatio);
+        wordBoundaries.push(Math.min(wordIndex, words.length - 1));
+      }
+      
+      return wordBoundaries;
+    }
+    
+    renderPageMarkers() {
+      if (!this.progressFill || this.pdfPageBoundaries.length === 0 || this.words.length === 0) {
+        return;
+      }
+      
+      console.log('🎨 Sayfa markerları çiziliyor...');
+      
+      // Önceki markerları temizle
+      const oldMarkers = this.progressFill.querySelectorAll('.pdf-page-marker');
+      oldMarkers.forEach(m => m.remove());
+      
+      // Her sayfa sınırı için marker ekle
+      this.pdfPageBoundaries.forEach((wordIndex, pageNum) => {
+        const percentage = (wordIndex / this.words.length) * 100;
+        const marker = document.createElement('div');
+        marker.className = 'pdf-page-marker';
+        marker.style.left = percentage + '%';
+        marker.title = `Sayfa ${pageNum + 2}`; // +2 çünkü ilk sayfa 0'da başlar
+        this.progressFill.appendChild(marker);
+      });
+      
+      console.log(`✅ ${this.pdfPageBoundaries.length} sayfa marker'ı eklendi`);
     }
     
     play(){
