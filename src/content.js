@@ -50,7 +50,8 @@
         #spritz-progress-container{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);width:400px;text-align:center;z-index:999999;pointer-events:auto;}
         #spritz-progress-bar{width:100%;height:8px;background:#333;border-radius:4px;cursor:pointer;position:relative;overflow:visible;margin-bottom:5px;pointer-events:auto;}
         #spritz-progress-fill{height:100%;background:linear-gradient(90deg,#007bff,#0056b3);border-radius:4px;width:0%;transition:width 0.1s ease-out;pointer-events:none;position:relative;}
-        .pdf-page-marker{position:absolute;top:0;width:2px;height:100%;background:#ffc107;opacity:0.8;pointer-events:none;}
+        .pdf-page-marker{position:absolute;top:-2px;width:2px;height:calc(100% + 4px);background:#ffc107;opacity:0.9;pointer-events:none;z-index:1;}
+        .pdf-page-number{position:absolute;top:-20px;transform:translateX(-50%);font-size:10px;color:#ffc107;font-weight:600;pointer-events:none;text-shadow:1px 1px 2px rgba(0,0,0,0.9);white-space:nowrap;}
         #spritz-progress-text{color:#fff;font-size:13px;font-weight:600;margin-top:3px;pointer-events:none;text-shadow:1px 1px 2px rgba(0,0,0,0.8);}
         #spritz-controls{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);text-align:center;padding:15px 25px;background:rgba(0,0,0,0.8);border-radius:8px;border:none;z-index:999999;pointer-events:auto;}
         #spritz-controls button{margin:0 8px;padding:8px 12px;background:#222;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;}
@@ -452,11 +453,33 @@
         console.log(`Processing page ${pageNum}/${pdf.numPages}`);
         const page = await pdf.getPage(pageNum);
         const textContent = await page.getTextContent();
-        // Türkçe karakterleri normalize et (NFD -> NFC)
+        
+        // Türkçe karakterleri düzgün çıkarmak için gelişmiş işleme
         const pageText = textContent.items.map(item => {
-          const str = item.str || '';
-          return str.normalize('NFC'); // Türkçe karakterleri doğru formatta al
+          let str = item.str || '';
+          
+          // NFC normalizasyonu (Canonical Composition)
+          str = str.normalize('NFC');
+          
+          // Yaygın PDF encoding hatalarını düzelt
+          const turkishCharMap = {
+            '\u0131': 'ı', '\u0130': 'İ',  // ı, İ
+            '\u015F': 'ş', '\u015E': 'Ş',  // ş, Ş
+            '\u011F': 'ğ', '\u011E': 'Ğ',  // ğ, Ğ
+            '\u00E7': 'ç', '\u00C7': 'Ç',  // ç, Ç
+            '\u00FC': 'ü', '\u00DC': 'Ü',  // ü, Ü
+            '\u00F6': 'ö', '\u00D6': 'Ö',  // ö, Ö
+          };
+          
+          // Karakter haritasını uygula
+          Object.keys(turkishCharMap).forEach(key => {
+            const regex = new RegExp(key, 'g');
+            str = str.replace(regex, turkishCharMap[key]);
+          });
+          
+          return str;
         }).join(' ');
+        
         fullText += pageText + ' ';
       }      console.log('Text extraction completed, total length:', fullText.length);
       return fullText.trim();
@@ -1092,11 +1115,33 @@
           
           const page = await pdf.getPage(i);
           const textContent = await page.getTextContent();
-          // Türkçe karakterleri normalize et (NFD -> NFC)
+          
+          // Türkçe karakterleri düzgün çıkarmak için gelişmiş işleme
           const pageText = textContent.items.map(item => {
-            const str = item.str || '';
-            return str.normalize('NFC'); // Türkçe karakterleri doğru formatta al
+            let str = item.str || '';
+            
+            // NFC normalizasyonu (Canonical Composition)
+            str = str.normalize('NFC');
+            
+            // Yaygın PDF encoding hatalarını düzelt
+            const turkishCharMap = {
+              '\u0131': 'ı', '\u0130': 'İ',  // ı, İ
+              '\u015F': 'ş', '\u015E': 'Ş',  // ş, Ş
+              '\u011F': 'ğ', '\u011E': 'Ğ',  // ğ, Ğ
+              '\u00E7': 'ç', '\u00C7': 'Ç',  // ç, Ç
+              '\u00FC': 'ü', '\u00DC': 'Ü',  // ü, Ü
+              '\u00F6': 'ö', '\u00D6': 'Ö',  // ö, Ö
+            };
+            
+            // Karakter haritasını uygula
+            Object.keys(turkishCharMap).forEach(key => {
+              const regex = new RegExp(key, 'g');
+              str = str.replace(regex, turkishCharMap[key]);
+            });
+            
+            return str;
           }).join(' ');
+          
           console.log(`   ✅ Sayfa ${i} - ${pageText.length} karakter`);
           fullText += pageText + ' ';
           
@@ -1422,21 +1467,46 @@
       
       console.log('🎨 Sayfa markerları çiziliyor...');
       
-      // Önceki markerları temizle
-      const oldMarkers = this.progressFill.querySelectorAll('.pdf-page-marker');
+      // Önceki markerları ve numaraları temizle
+      const oldMarkers = this.progressFill.querySelectorAll('.pdf-page-marker, .pdf-page-number');
       oldMarkers.forEach(m => m.remove());
       
-      // Her sayfa sınırı için marker ekle
-      this.pdfPageBoundaries.forEach((wordIndex, pageNum) => {
+      // İlk sayfa için başlangıç marker'ı ve numarası
+      const firstMarker = document.createElement('div');
+      firstMarker.className = 'pdf-page-marker';
+      firstMarker.style.left = '0%';
+      firstMarker.title = 'Sayfa 1';
+      this.progressFill.appendChild(firstMarker);
+      
+      const firstNumber = document.createElement('div');
+      firstNumber.className = 'pdf-page-number';
+      firstNumber.style.left = '0%';
+      firstNumber.textContent = '1';
+      firstNumber.title = 'Sayfa 1';
+      this.progressFill.appendChild(firstNumber);
+      
+      // Diğer sayfa sınırları için marker ve numara ekle
+      this.pdfPageBoundaries.forEach((wordIndex, idx) => {
         const percentage = (wordIndex / this.words.length) * 100;
+        const pageNum = idx + 2; // +2 çünkü ilk sayfa 1, idx 0'dan başlıyor
+        
+        // Marker çizgisi
         const marker = document.createElement('div');
         marker.className = 'pdf-page-marker';
         marker.style.left = percentage + '%';
-        marker.title = `Sayfa ${pageNum + 2}`; // +2 çünkü ilk sayfa 0'da başlar
+        marker.title = `Sayfa ${pageNum}`;
         this.progressFill.appendChild(marker);
+        
+        // Sayfa numarası
+        const pageNumber = document.createElement('div');
+        pageNumber.className = 'pdf-page-number';
+        pageNumber.style.left = percentage + '%';
+        pageNumber.textContent = pageNum.toString();
+        pageNumber.title = `Sayfa ${pageNum}`;
+        this.progressFill.appendChild(pageNumber);
       });
       
-      console.log(`✅ ${this.pdfPageBoundaries.length} sayfa marker'ı eklendi`);
+      console.log(`✅ ${this.pdfPageBoundaries.length + 1} sayfa marker'ı ve numarası eklendi`);
     }
     
     play(){
