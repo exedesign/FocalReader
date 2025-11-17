@@ -676,7 +676,7 @@
   }
 
   // Spritz okuma başlat
-  function startSpritz(text){
+  async function startSpritz(text){
     const existing = document.getElementById(WIDGET_ID);
     if(existing) existing.remove();
     
@@ -687,9 +687,25 @@
     const player = new SpritzPlayer(container);
     window.spritzPlayer = player; // Global olarak sakla
     
+    // Ayarların yüklenmesini bekle
+    if (!player.settingsLoaded) {
+      await player.loadSettings();
+    }
+    
+    // Metni cümlelere ayır ve filtrele
+    console.log('🌐 Web metni filtreleniyor...');
+    const sentences = text.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 0);
+    console.log(`📋 Toplam ${sentences.length} cümle bulundu`);
+    
+    const filteredSentences = player.filterSentences(sentences);
+    const excludedCount = sentences.length - filteredSentences.length;
+    console.log(`✅ ${filteredSentences.length} cümle kaldı (${excludedCount} cümle hariç tutuldu)`);
+    
+    const filteredText = filteredSentences.join('. ');
+    
     // UI hazır olana kadar kısa gecikme
     setTimeout(() => {
-      player.setText(text);
+      player.setText(filteredText);
       player.play();
     }, 50);
   }
@@ -798,7 +814,14 @@
       this.container.querySelector('#spritz-forward').addEventListener('click', ()=>this.skipForward(10));
       this.container.querySelector('#spritz-end').addEventListener('click', ()=>this.goToEnd());
       this.container.querySelector('#spritz-close').addEventListener('click', ()=>this.stop());
-      this.container.querySelector('#spritz-wpm').addEventListener('change', (e)=>{ this.wpm = Number(e.target.value); if(this.isPlaying) this.restartInterval(); });
+      this.container.querySelector('#spritz-wpm').addEventListener('change', (e)=>{ 
+        this.wpm = Number(e.target.value); 
+        // WPM manuel değiştirildiğinde hız çarpanını sıfırla
+        this.speedMultiplier = 1;
+        const speedSelect = this.container.querySelector('#spritz-speed');
+        if(speedSelect) speedSelect.value = '1';
+        if(this.isPlaying) this.restartInterval(); 
+      });
       this.container.querySelector('#spritz-speed').addEventListener('change', (e)=>{ this.setSpeedMultiplier(Number(e.target.value)); });
       
       // PDF Upload butonu
@@ -1042,21 +1065,34 @@
           );
           
           await this.sleep(300);
-          this.updateLoadingProgress(92, 'Kelimeler ayrıştırılıyor...');
-          this.setText(fullText.trim());
+          this.updateLoadingProgress(92, 'Kelimeler ayrıştırılıyor ve filtreleniyor...');
+          
+          // Metni cümlelere ayır ve filtrele
+          console.log('📖 Metin cümlelere ayrılıyor...');
+          const sentences = fullText.trim().split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 0);
+          console.log(`📋 Toplam ${sentences.length} cümle bulundu`);
+          
+          const filteredSentences = this.filterSentences(sentences);
+          console.log(`✅ ${filteredSentences.length} cümle kaldı (${sentences.length - filteredSentences.length} cümle hariç tutuldu)`);
+          
+          // Filtrelenmiş metni setText'e gönder
+          const filteredText = filteredSentences.join('. ');
+          this.setText(filteredText);
           
           await this.sleep(300);
-          this.updateLoadingProgress(97, `✓ ${this.words.length.toLocaleString()} kelime hazırlandı`);
+          const excludedCount = sentences.length - filteredSentences.length;
+          const excludeInfo = excludedCount > 0 ? ` (🚫 ${excludedCount} cümle hariç tutuldu)` : '';
+          this.updateLoadingProgress(97, `✓ ${this.words.length.toLocaleString()} kelime hazırlandı${excludeInfo}`);
           this.showLoadingStatus(
             '✅ Adım 6/7: Metin hazır!', 
-            `${this.words.length.toLocaleString()} kelime okumaya hazır`
+            `${this.words.length.toLocaleString()} kelime okumaya hazır${excludeInfo}`
           );
           
           await this.sleep(500);
           this.updateLoadingProgress(100, '✓ Tamamlandı!');
           this.showLoadingStatus(
             '🎉 Adım 7/7: Okuma başlatılıyor!', 
-            `${pdf.numPages} sayfa, ${this.words.length.toLocaleString()} kelime`
+            `${pdf.numPages} sayfa, ${this.words.length.toLocaleString()} kelime${excludeInfo}`
           );
           
           await this.sleep(800);
@@ -1105,24 +1141,12 @@
       console.log('📋 Mevcut excludeWords:', this.excludeWords ? `"${this.excludeWords}"` : '(boş)');
       console.log('⚙️ Settings loaded:', this.settingsLoaded);
       
-      // Önce metni cümlelere ayır
-      const sentences = text.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 0);
-      console.log('📄 Cümleler bulundu:', sentences.length);
-      
-      // Kelime filtresini uygula
-      const filteredSentences = this.filterSentences(sentences);
-      console.log('✅ Filtrelenmiş cümleler:', filteredSentences.length);
-      
-      // Filtrelenmiş cümleleri kelimelere ayır
-      const filteredText = filteredSentences.join('. ');
-      const cleaned = filteredText.replace(/\s+/g,' ').trim();
+      // Metni kelimelere ayır (metin zaten filtrelenmiş olarak gelir - PDF'den veya web'den)
+      const cleaned = text.replace(/\s+/g,' ').trim();
       this.words = cleaned.split(' ').filter(word => word.trim().length > 0);
       this.index = 0;
       
-      console.log('✅ HAZIR! Toplam kelime:', this.words.length);
-      if (sentences.length !== filteredSentences.length) {
-        console.log(`🔍 Filtrelendi: ${sentences.length - filteredSentences.length} cümle çıkarıldı`);
-      }
+      console.log('✅ HAZIR! Toplam kelime:', this.words.length)
       
       // İlk kelimeyi göster ve progress'i başlat
       if (this.words.length > 0) {
@@ -1323,6 +1347,15 @@
     setSpeedMultiplier(multiplier){
       this.speedMultiplier = multiplier;
       console.log('⚡ Hız çarpanı:', multiplier + 'x');
+      
+      // WPM input'ı da güncelle (efektif WPM)
+      const wpmInput = this.container.querySelector('#spritz-wpm');
+      if (wpmInput) {
+        const effectiveWPM = Math.round(this.wpm * multiplier);
+        wpmInput.value = effectiveWPM;
+        console.log('📊 Efektif WPM:', effectiveWPM);
+      }
+      
       if(this.isPlaying) {
         this.restartInterval();
       }
