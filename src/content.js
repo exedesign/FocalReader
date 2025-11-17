@@ -517,16 +517,18 @@
         // Satır sonu tire birleştirme
         let cleanedText = pageText.replace(/(\w+)-\s+(\w+)/g, '$1$2');
         
-        // Sadece kelime içindeki Türkçe karakter boşluklarını temizle (kelimeler arasını koru)
-        // "u ş ak" -> "uşak", "ya ş lı" -> "yaşlı" ama "bir ş apka" -> "bir şapka"
-        const tr = '[ğĞüÜşŞıİöÖçÇ]';
-        const letter = '[a-zA-ZğĞüÜşŞıİöÖçÇ]';
-        // Harf + boşluk + Türkçe karakter + harf (kelime içi)
-        cleanedText = cleanedText.replace(new RegExp(`(${letter})\\s+(${tr})(${letter})`, 'g'), '$1$2$3');
-        // Harf + Türkçe karakter + boşluk + harf (kelime içi)
-        cleanedText = cleanedText.replace(new RegExp(`(${letter})(${tr})\\s+(${letter})`, 'g'), '$1$2$3');
-        // Harf + boşluk + Türkçe karakter + boşluk + harf (çift boşluk)
-        cleanedText = cleanedText.replace(new RegExp(`(${letter})\\s+(${tr})\\s+(${letter})`, 'g'), '$1$2$3');
+        // Çok konservatif Türkçe karakter temizleme: sadece küçük harf + TR karakter + küçük harf
+        // "u ş ak" -> "uşak", "ya ş lı" -> "yaşlı"
+        // "kapıyı açtı" -> "kapıyı açtı" (dokunma, kelime sonu olabilir)
+        const trLower = '[ğüşıöç]'; // Sadece küçük harf Türkçe karakterler
+        const lower = '[a-zğüşıöç]'; // Sadece küçük harfler
+        
+        // Küçük harf + boşluk + Türkçe + küçük harf (kesinlikle kelime içi)
+        cleanedText = cleanedText.replace(new RegExp(`(${lower})\\s+(${trLower})(${lower})`, 'g'), '$1$2$3');
+        // Küçük harf + Türkçe + boşluk + küçük harf
+        cleanedText = cleanedText.replace(new RegExp(`(${lower})(${trLower})\\s+(${lower})`, 'g'), '$1$2$3');
+        // Çift boşluk durumu
+        cleanedText = cleanedText.replace(new RegExp(`(${lower})\\s+(${trLower})\\s+(${lower})`, 'g'), '$1$2$3');
         
         fullText += cleanedText + ' ';
       }      console.log('Text extraction completed, total length:', fullText.length);
@@ -1225,16 +1227,18 @@
           // Satır sonu tire birleştirme
           let cleanedText = pageText.replace(/(\w+)-\s+(\w+)/g, '$1$2');
           
-          // Sadece kelime içindeki Türkçe karakter boşluklarını temizle (kelimeler arasını koru)
-          // "u ş ak" -> "uşak", "ya ş lı" -> "yaşlı" ama "bir ş apka" -> "bir şapka"
-          const tr = '[ğĞüÜşŞıİöÖçÇ]';
-          const letter = '[a-zA-ZğĞüÜşŞıİöÖçÇ]';
-          // Harf + boşluk + Türkçe karakter + harf (kelime içi)
-          cleanedText = cleanedText.replace(new RegExp(`(${letter})\\s+(${tr})(${letter})`, 'g'), '$1$2$3');
-          // Harf + Türkçe karakter + boşluk + harf (kelime içi)
-          cleanedText = cleanedText.replace(new RegExp(`(${letter})(${tr})\\s+(${letter})`, 'g'), '$1$2$3');
-          // Harf + boşluk + Türkçe karakter + boşluk + harf (çift boşluk)
-          cleanedText = cleanedText.replace(new RegExp(`(${letter})\\s+(${tr})\\s+(${letter})`, 'g'), '$1$2$3');
+          // Çok konservatif Türkçe karakter temizleme: sadece küçük harf + TR karakter + küçük harf
+          // "u ş ak" -> "uşak", "ya ş lı" -> "yaşlı"
+          // "kapıyı açtı" -> "kapıyı açtı" (dokunma, kelime sonu olabilir)
+          const trLower = '[ğüşıöç]'; // Sadece küçük harf Türkçe karakterler
+          const lower = '[a-zğüşıöç]'; // Sadece küçük harfler
+          
+          // Küçük harf + boşluk + Türkçe + küçük harf (kesinlikle kelime içi)
+          cleanedText = cleanedText.replace(new RegExp(`(${lower})\\s+(${trLower})(${lower})`, 'g'), '$1$2$3');
+          // Küçük harf + Türkçe + boşluk + küçük harf
+          cleanedText = cleanedText.replace(new RegExp(`(${lower})(${trLower})\\s+(${lower})`, 'g'), '$1$2$3');
+          // Çift boşluk durumu
+          cleanedText = cleanedText.replace(new RegExp(`(${lower})\\s+(${trLower})\\s+(${lower})`, 'g'), '$1$2$3');
           
           console.log(`   ✅ Sayfa ${i} - ${cleanedText.length} karakter`);
           fullText += cleanedText + ' ';
