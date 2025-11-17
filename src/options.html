@@ -147,6 +147,42 @@
         • Yavaş olabilir, sadece gerektiğinde açın<br>
         • Varsayılan: Kapalı</small>
       </label>
+      
+      <h4 style="color:#cccccc;margin-top:20px;margin-bottom:10px;">🔧 PDF Metin İşleme Yöntemi</h4>
+      
+      <label>
+        <input type="radio" name="pdf-processing" id="pdf-method-standard" value="standard" checked style="width:auto;margin:0 5px 0 0;">
+        <strong>Standart</strong> - Temel düzeltmeler
+        <small>• Mevcut Türkçe karakter düzeltmeleri<br>
+        • Satır sonu birleştirme<br>
+        • En hızlı yöntem</small>
+      </label>
+      
+      <label style="margin-top:10px;">
+        <input type="radio" name="pdf-processing" id="pdf-method-character-fix" value="characterFix" style="width:auto;margin:0 5px 0 0;">
+        <strong>Türkçe Karakter Düzeltme</strong> - OCR hataları için
+        <small>• ý→ı, ð→ğ, þ→ş gibi OCR hatalarını düzeltir<br>
+        • Bozuk karakter eşleşmeleri temizlenir<br>
+        • Taranmış PDF'ler için ideal</small>
+      </label>
+      
+      <label style="margin-top:10px;">
+        <input type="radio" name="pdf-processing" id="pdf-method-normalize" value="normalize" style="width:auto;margin:0 5px 0 0;">
+        <strong>Metin Normalleştirme</strong> - Düz metin için
+        <small>• Fazla satır sonlarını düzenler<br>
+        • Boşlukları optimize eder<br>
+        • Konuşmacı isimlerini satıra getirir<br>
+        • Normal metinler için önerilir</small>
+      </label>
+      
+      <label style="margin-top:10px;">
+        <input type="radio" name="pdf-processing" id="pdf-method-dialogue" value="dialogue" style="width:auto;margin:0 5px 0 0;">
+        <strong>Diyalog Çıkarma</strong> - Senaryo formatı için
+        <small>• Konuşmacı: diyalog formatına çevirir<br>
+        • KONUŞMACI: yapısını tanır<br>
+        • Aksiyon satırlarını ayırır<br>
+        • Film/tiyatro senaryoları için</small>
+      </label>
     </div>
     
     <button id="save">💾 Kaydet</button>

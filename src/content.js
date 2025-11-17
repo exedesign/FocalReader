@@ -549,8 +549,34 @@
         }
         
         fullText += cleanedText + ' ';
-      }      console.log('Text extraction completed, total length:', fullText.length);
-      return fullText.trim();
+      }
+      
+      console.log('Text extraction completed, total length:', fullText.length);
+      
+      // Kullanıcının seçtiği PDF işleme yöntemini uygula
+      let processedText = fullText.trim();
+      const processingMethod = window.pdfCleanupSettings?.processingMethod || 'standard';
+      
+      console.log('🔧 Applying PDF processing method:', processingMethod);
+      
+      if (processingMethod === 'characterFix') {
+        // Yöntem 1: Türkçe karakter düzeltme (OCR hataları için)
+        processedText = fixTurkishCharacters(processedText);
+        console.log('✅ Character fix applied');
+      } else if (processingMethod === 'normalize') {
+        // Yöntem 2: Metin normalleştirme (düz metinler için)
+        processedText = normalizeText(processedText);
+        console.log('✅ Text normalization applied');
+      } else if (processingMethod === 'dialogue') {
+        // Yöntem 3: Diyalog çıkarma (senaryo formatı için)
+        processedText = extractDialogue(processedText);
+        console.log('✅ Dialogue extraction applied');
+      } else {
+        // Standart: Mevcut düzeltmeler zaten uygulandı
+        console.log('✅ Standard processing (no additional method)');
+      }
+      
+      return processedText;
       
     } catch (error) {
       console.error('PDF.js parsing error:', error);
@@ -701,6 +727,92 @@
       console.error('❌ OCR error:', error);
       return '';
     }
+  }
+
+  // 1. Yöntem: Türkçe karakter düzeltme (OCR hataları için)
+  function fixTurkishCharacters(text) {
+    // Genellikle OCR veya ham metin çıkarımında görülen hatalı eşleşmeler
+    const charMap = {
+        'ý': 'ı', 'Ý': 'İ', // Noktasız I ve İ
+        'ð': 'ğ', 'Ð': 'Ğ', // Yumuşak G
+        'þ': 'ş', 'Þ': 'Ş', // Ş
+        'ç': 'ç', 'Ç': 'Ç', // Ç
+        'ö': 'ö', 'Ö': 'Ö', // Ö
+        'ü': 'ü', 'Ü': 'Ü'  // Ü
+    };
+
+    let cleanedText = text;
+
+    for (const [incorrect, correct] of Object.entries(charMap)) {
+        // Hatalı okunan karakterleri düzelt
+        cleanedText = cleanedText.replace(new RegExp(incorrect, 'g'), correct);
+    }
+    
+    // Metin katmanından kaynaklanan gereksiz tırnak işaretlerini kaldırma (opsiyonel)
+    cleanedText = cleanedText.replace(/'|'|"|"/g, "'");
+
+    return cleanedText;
+  }
+
+  // 2. Yöntem: Metin normalleştirme (düz metinler için)
+  function normalizeText(text) {
+    // 1. Çoklu satır sonlarını (paragraf ayırıcıları) iki satır sonuna düşürün.
+    // Bu, metin akışındaki büyük ayrımı korur.
+    let normalized = text.replace(/(\r\n|\n|\r){2,}/g, '\n\n');
+
+    // 2. Satır başlarındaki ve sonlarındaki gereksiz boşlukları temizleyin.
+    normalized = normalized.replace(/^[ \t]+|[ \t]+$/gm, '');
+    
+    // 3. İki veya daha fazla ardışık boşluğu tek boşluğa düşürün.
+    normalized = normalized.replace(/[ \t]{2,}/g, ' ');
+
+    // 4. Konuşmacı adlarının yanındaki tek satır sonlarını tek boşluğa çevirin (senaryo formatı için kritik)
+    // Bu, konuşmacı adı ve diyalog metnini aynı satıra getirir.
+    normalized = normalized.replace(/([A-ZÇĞIİÖŞÜ]+)\s*\n/g, '$1 ');
+
+    return normalized;
+  }
+
+  // 3. Yöntem: Diyalog çıkarma (senaryo formatı için)
+  function extractDialogue(text) {
+    // Senaryo satırlarını ayır
+    const lines = text.split('\n');
+    const structuredContent = [];
+    let currentSpeaker = null;
+
+    // Konuşmacı adlarını büyük harfle başlatan REGEX deseni
+    // (A-Z ve Türkçe büyük harfler, parantez içindeki kısaltmaları da yakalar: (V.O.), (DEVAM))
+    const speakerRegex = /^([A-ZÇĞIİÖŞÜ\s\(\).]{2,}):/i; 
+
+    for (const line of lines) {
+        const match = line.match(speakerRegex);
+        
+        if (match) {
+            // Konuşmacı adı bulundu: Örneğin "GUSTAV:"
+            currentSpeaker = match[1].trim(); 
+            const dialogueText = line.substring(match[0].length).trim();
+            structuredContent.push({ type: 'dialogue', speaker: currentSpeaker, text: dialogueText });
+        } else if (line.trim().length > 0) {
+            // Konuşmacı yoksa veya boş satır değilse, bir önceki konuşmacıya devam ediyor olabilir
+            // Ya da bu bir Sahne/Aksiyon satırıdır.
+            if (currentSpeaker && structuredContent.length > 0 && structuredContent[structuredContent.length - 1].type === 'dialogue') {
+                // Eğer önceki satır diyalog ise ve bu satır küçük harf ile başlıyorsa, diyalog devamıdır.
+                structuredContent[structuredContent.length - 1].text += ' ' + line.trim();
+            } else {
+                // Aksiyon/Sahne tanımı veya düz metin
+                currentSpeaker = null; // Konuşmacıyı sıfırla
+                structuredContent.push({ type: 'action', text: line.trim() });
+            }
+        }
+    }
+    
+    // Temiz, yapılandırılmış çıktı üret
+    return structuredContent.map(item => {
+        if (item.type === 'dialogue') {
+            return `**${item.speaker}**: ${item.text}`;
+        }
+        return `*${item.text}*`;
+    }).join('\n\n');
   }
 
   // Dosyadan metin çıkarma
@@ -901,7 +1013,7 @@
     // Kullanıcı ayarlarını yükle
     async loadSettings(){
       return new Promise((resolve) => {
-        chrome.storage.sync.get(['defaultWPM', 'selectedFont', 'excludeWords', 'showGains', 'enablePdfCleanup', 'enableOcr'], (res) => {
+        chrome.storage.sync.get(['defaultWPM', 'selectedFont', 'excludeWords', 'showGains', 'enablePdfCleanup', 'enableOcr', 'pdfProcessingMethod'], (res) => {
           this.wpm = res.defaultWPM || 250;
           this.selectedFont = res.selectedFont || 'georgia';
           this.excludeWords = res.excludeWords || '';
@@ -910,11 +1022,12 @@
           // PDF temizleme ayarlarını global değişkene kaydet
           window.pdfCleanupSettings = {
             enabled: res.enablePdfCleanup !== false, // Varsayılan: true
-            ocrEnabled: res.enableOcr === true // Varsayılan: false
+            ocrEnabled: res.enableOcr === true, // Varsayılan: false
+            processingMethod: res.pdfProcessingMethod || 'standard' // Varsayılan: standard
           };
           
           this.settingsLoaded = true;
-          console.log('📋 Ayarlar yüklendi - WPM:', this.wpm, 'excludeWords:', this.excludeWords ? `"${this.excludeWords}"` : '(boş)', 'PDF Cleanup:', window.pdfCleanupSettings.enabled ? 'Açık' : 'Kapalı', 'OCR:', window.pdfCleanupSettings.ocrEnabled ? 'Açık' : 'Kapalı');
+          console.log('📋 Ayarlar yüklendi - WPM:', this.wpm, 'excludeWords:', this.excludeWords ? `"${this.excludeWords}"` : '(boş)', 'PDF Cleanup:', window.pdfCleanupSettings.enabled ? 'Açık' : 'Kapalı', 'OCR:', window.pdfCleanupSettings.ocrEnabled ? 'Açık' : 'Kapalı', 'Processing Method:', window.pdfCleanupSettings.processingMethod);
           this.setupUI(); // UI'yi ayarlarla birlikte kur
           resolve();
         });
