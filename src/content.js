@@ -1445,9 +1445,22 @@
         this.progressFill.style.width = percentage + '%';
         this.progressFill.setAttribute('data-percent', percentText);
         
-        // Alt kısımdaki yüzde göstergesi
+        // Hangi sayfada olduğumuzu hesapla
+        let currentPage = 1;
+        if (this.pdfPageBoundaries && this.pdfPageBoundaries.length > 0) {
+          const totalPages = this.pdfPageBoundaries.length + 1;
+          // Yüzdeye göre sayfa hesapla (eşit bölünmüş)
+          currentPage = Math.min(Math.ceil(percentage / 100 * totalPages), totalPages);
+        }
+        
+        // Alt kısımdaki gösterge: Yüzde ve Sayfa
         if (this.progressText) {
-          this.progressText.textContent = percentText;
+          if (this.pdfPageBoundaries && this.pdfPageBoundaries.length > 0) {
+            const totalPages = this.pdfPageBoundaries.length + 1;
+            this.progressText.textContent = `${percentText} - Sayfa ${currentPage}/${totalPages}`;
+          } else {
+            this.progressText.textContent = percentText;
+          }
         }
       }
     }
@@ -1497,11 +1510,11 @@
     }
     
     renderPageMarkers() {
-      if (!this.progressFill || this.pdfPageBoundaries.length === 0 || this.words.length === 0) {
+      if (!this.progressFill || this.pdfPageBoundaries.length === 0) {
         return;
       }
       
-      console.log('🎨 Sayfa markerları çiziliyor (cetvel görünümü)...');
+      console.log('🎨 Sayfa markerları çiziliyor (eşit bölünmüş cetvel)...');
       
       // Önceki markerları ve numaraları temizle
       const oldMarkers = this.progressFill.querySelectorAll('.pdf-page-marker, .pdf-page-number');
@@ -1509,59 +1522,33 @@
       
       const totalPages = this.pdfPageBoundaries.length + 1;
       
-      // İlk sayfa için başlangıç marker'ı ve numarası (her zaman göster)
-      const firstMarker = document.createElement('div');
-      firstMarker.className = 'pdf-page-marker';
-      firstMarker.style.left = '0%';
-      firstMarker.title = 'Sayfa 1';
-      this.progressFill.appendChild(firstMarker);
-      
-      const firstNumber = document.createElement('div');
-      firstNumber.className = 'pdf-page-number';
-      firstNumber.style.left = '0%';
-      firstNumber.textContent = '1';
-      firstNumber.title = 'Sayfa 1';
-      this.progressFill.appendChild(firstNumber);
-      
-      // Diğer sayfa sınırları için marker ve numara ekle
-      this.pdfPageBoundaries.forEach((wordIndex, idx) => {
-        const percentage = (wordIndex / this.words.length) * 100;
-        const pageNum = idx + 2; // +2 çünkü ilk sayfa 1, idx 0'dan başlıyor
+      // HER SAYFA EŞİT GENİŞLİKTE - yüzdeye göre eşit bölünmüş
+      for (let pageNum = 0; pageNum <= totalPages; pageNum++) {
+        const percentage = (pageNum / totalPages) * 100;
         
-        // Her sayfa için marker çizgisi (cetvel çizgisi)
+        if (pageNum === totalPages) continue; // Son çizgi çubuk bitiminde
+        
+        // Her sayfa için marker çizgisi
         const marker = document.createElement('div');
         marker.className = 'pdf-page-marker';
         marker.style.left = percentage + '%';
-        marker.title = `Sayfa ${pageNum}`;
-        
-        // Her 5 sayfada bir veya son sayfa ise daha belirgin yap
-        const isMajorTick = (pageNum % 5 === 0) || (pageNum === totalPages);
-        if (isMajorTick) {
-          marker.style.width = '3px';
-          marker.style.background = '#ffc107';
-        } else {
-          // Ara sayfalar için daha ince çizgi
-          marker.style.width = '2px';
-          marker.style.opacity = '0.7';
-        }
-        
+        marker.title = `Sayfa ${pageNum + 1}`;
         this.progressFill.appendChild(marker);
         
-        // Sayfa numarasını sadece önemli sayfalarda göster (1, 5, 10, 15... ve son sayfa)
-        // veya az sayfa varsa (≤20) hepsini göster
-        const shouldShowNumber = totalPages <= 20 || pageNum % 5 === 0 || pageNum === totalPages;
+        // Sayfa numarası göster (her 5 sayfada bir veya toplam ≤20 ise hepsini)
+        const shouldShowNumber = totalPages <= 20 || (pageNum + 1) % 5 === 0 || pageNum === 0;
         
         if (shouldShowNumber) {
           const pageNumber = document.createElement('div');
           pageNumber.className = 'pdf-page-number';
           pageNumber.style.left = percentage + '%';
-          pageNumber.textContent = pageNum.toString();
-          pageNumber.title = `Sayfa ${pageNum}`;
+          pageNumber.textContent = (pageNum + 1).toString();
+          pageNumber.title = `Sayfa ${pageNum + 1}`;
           this.progressFill.appendChild(pageNumber);
         }
-      });
+      }
       
-      console.log(`✅ ${totalPages} sayfa için cetvel marker'ları eklendi`);
+      console.log(`✅ ${totalPages} sayfa için eşit bölünmüş cetvel oluşturuldu`);
     }
     
     play(){
