@@ -47,12 +47,12 @@
         .spritz-left{color:#888;}
         .spritz-pivot{color:#ffdd44;font-weight:700;}
         .spritz-right{color:#888;}
-        #spritz-progress-container{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);width:400px;text-align:center;z-index:999999;pointer-events:auto;}
-        #spritz-progress-bar{width:100%;height:8px;background:#333;border-radius:4px;cursor:pointer;position:relative;overflow:visible;margin-bottom:5px;pointer-events:auto;}
-        #spritz-progress-fill{height:100%;background:linear-gradient(90deg,#007bff,#0056b3);border-radius:4px;width:0%;transition:width 0.1s ease-out;pointer-events:none;position:relative;}
-        .pdf-page-marker{position:absolute;top:-2px;width:2px;height:calc(100% + 4px);background:#ffc107;opacity:0.9;pointer-events:none;z-index:1;}
-        .pdf-page-number{position:absolute;top:-20px;transform:translateX(-50%);font-size:10px;color:#ffc107;font-weight:600;pointer-events:none;text-shadow:1px 1px 2px rgba(0,0,0,0.9);white-space:nowrap;}
-        #spritz-progress-text{color:#fff;font-size:13px;font-weight:600;margin-top:3px;pointer-events:none;text-shadow:1px 1px 2px rgba(0,0,0,0.8);}
+        #spritz-progress-container{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);width:500px;text-align:center;z-index:999999;pointer-events:auto;}
+        #spritz-progress-bar{width:100%;height:12px;background:#1a1a1a;border-radius:6px;cursor:pointer;position:relative;overflow:visible;margin-bottom:8px;pointer-events:auto;box-shadow:inset 0 2px 4px rgba(0,0,0,0.3);}
+        #spritz-progress-fill{height:100%;background:linear-gradient(90deg,#007bff,#0056b3);border-radius:6px;width:0%;transition:width 0.1s ease-out;pointer-events:none;position:relative;box-shadow:0 0 8px rgba(0,123,255,0.5);}
+        .pdf-page-marker{position:absolute;top:-5px;width:3px;height:calc(100% + 10px);background:#ffc107;opacity:1;pointer-events:none;z-index:2;box-shadow:0 0 4px rgba(255,193,7,0.6);border-radius:1px;}
+        .pdf-page-number{position:absolute;top:-28px;transform:translateX(-50%);font-size:11px;color:#ffc107;font-weight:700;pointer-events:none;text-shadow:0 0 8px rgba(255,193,7,0.8),1px 1px 3px rgba(0,0,0,1);white-space:nowrap;background:rgba(0,0,0,0.6);padding:2px 5px;border-radius:3px;border:1px solid rgba(255,193,7,0.3);}
+        #spritz-progress-text{color:#fff;font-size:16px;font-weight:700;margin-top:8px;pointer-events:none;text-shadow:0 0 10px rgba(0,123,255,0.8),2px 2px 4px rgba(0,0,0,1);letter-spacing:1px;background:rgba(0,123,255,0.2);display:inline-block;padding:4px 12px;border-radius:4px;border:1px solid rgba(0,123,255,0.3);}
         #spritz-controls{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);text-align:center;padding:15px 25px;background:rgba(0,0,0,0.8);border-radius:8px;border:none;z-index:999999;pointer-events:auto;}
         #spritz-controls button{margin:0 8px;padding:8px 12px;background:#222;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;}
         #spritz-controls button:hover{background:#444;}
@@ -1494,13 +1494,15 @@
         return;
       }
       
-      console.log('🎨 Sayfa markerları çiziliyor...');
+      console.log('🎨 Sayfa markerları çiziliyor (cetvel görünümü)...');
       
       // Önceki markerları ve numaraları temizle
       const oldMarkers = this.progressFill.querySelectorAll('.pdf-page-marker, .pdf-page-number');
       oldMarkers.forEach(m => m.remove());
       
-      // İlk sayfa için başlangıç marker'ı ve numarası
+      const totalPages = this.pdfPageBoundaries.length + 1;
+      
+      // İlk sayfa için başlangıç marker'ı ve numarası (her zaman göster)
       const firstMarker = document.createElement('div');
       firstMarker.className = 'pdf-page-marker';
       firstMarker.style.left = '0%';
@@ -1519,23 +1521,40 @@
         const percentage = (wordIndex / this.words.length) * 100;
         const pageNum = idx + 2; // +2 çünkü ilk sayfa 1, idx 0'dan başlıyor
         
-        // Marker çizgisi
+        // Her sayfa için marker çizgisi (cetvel çizgisi)
         const marker = document.createElement('div');
         marker.className = 'pdf-page-marker';
         marker.style.left = percentage + '%';
         marker.title = `Sayfa ${pageNum}`;
+        
+        // Her 5 sayfada bir veya son sayfa ise daha belirgin yap
+        const isMajorTick = (pageNum % 5 === 0) || (pageNum === totalPages);
+        if (isMajorTick) {
+          marker.style.width = '3px';
+          marker.style.background = '#ffc107';
+        } else {
+          // Ara sayfalar için daha ince çizgi
+          marker.style.width = '2px';
+          marker.style.opacity = '0.7';
+        }
+        
         this.progressFill.appendChild(marker);
         
-        // Sayfa numarası
-        const pageNumber = document.createElement('div');
-        pageNumber.className = 'pdf-page-number';
-        pageNumber.style.left = percentage + '%';
-        pageNumber.textContent = pageNum.toString();
-        pageNumber.title = `Sayfa ${pageNum}`;
-        this.progressFill.appendChild(pageNumber);
+        // Sayfa numarasını sadece önemli sayfalarda göster (1, 5, 10, 15... ve son sayfa)
+        // veya az sayfa varsa (≤20) hepsini göster
+        const shouldShowNumber = totalPages <= 20 || pageNum % 5 === 0 || pageNum === totalPages;
+        
+        if (shouldShowNumber) {
+          const pageNumber = document.createElement('div');
+          pageNumber.className = 'pdf-page-number';
+          pageNumber.style.left = percentage + '%';
+          pageNumber.textContent = pageNum.toString();
+          pageNumber.title = `Sayfa ${pageNum}`;
+          this.progressFill.appendChild(pageNumber);
+        }
       });
       
-      console.log(`✅ ${this.pdfPageBoundaries.length + 1} sayfa marker'ı ve numarası eklendi`);
+      console.log(`✅ ${totalPages} sayfa için cetvel marker'ları eklendi`);
     }
     
     play(){
