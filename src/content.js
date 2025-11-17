@@ -47,13 +47,13 @@
         .spritz-left{color:#888;}
         .spritz-pivot{color:#ffdd44;font-weight:700;}
         .spritz-right{color:#888;}
-        #spritz-progress-container{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);width:450px;text-align:center;z-index:999999;pointer-events:auto;padding-top:25px;}
-        #spritz-progress-bar{width:100%;height:8px;background:#333;border-radius:4px;cursor:pointer;position:relative;overflow:visible;margin-bottom:10px;pointer-events:auto;}
+        #spritz-progress-container{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);width:450px;text-align:center;z-index:999999;pointer-events:auto;padding-top:30px;}
+        #spritz-progress-bar{width:100%;height:8px;background:#333;border-radius:4px;cursor:pointer;position:relative;overflow:hidden;margin-bottom:0;pointer-events:auto;}
         #spritz-progress-fill{height:100%;background:linear-gradient(90deg,#007bff,#0056b3);border-radius:4px;width:0%;transition:width 0.3s ease-out;pointer-events:none;position:relative;}
-        #spritz-progress-fill::after{content:attr(data-percent);position:absolute;right:5px;top:50%;transform:translateY(-50%);color:#fff;font-size:11px;font-weight:600;text-shadow:1px 1px 2px rgba(0,0,0,0.8);}
-        .pdf-page-marker{position:absolute;top:-8px;width:1px;height:calc(100% + 16px);background:#888;opacity:0.6;pointer-events:none;z-index:1;}
-        .pdf-page-number{position:absolute;top:-22px;transform:translateX(-50%);font-size:10px;color:#aaa;font-weight:400;pointer-events:none;white-space:nowrap;}
-        #spritz-progress-text{display:none;}
+        #spritz-progress-fill::after{content:attr(data-percent);position:absolute;right:8px;top:50%;transform:translateY(-50%);color:#fff;font-size:10px;font-weight:600;text-shadow:1px 1px 2px rgba(0,0,0,0.9);z-index:10;}
+        .pdf-page-marker{position:absolute;top:-12px;width:1px;height:calc(100% + 24px);background:#666;opacity:0.5;pointer-events:none;z-index:1;}
+        .pdf-page-number{position:absolute;top:-26px;transform:translateX(-50%);font-size:9px;color:#999;font-weight:400;pointer-events:none;white-space:nowrap;}
+        #spritz-progress-text{position:absolute;bottom:-22px;left:50%;transform:translateX(-50%);color:#999;font-size:12px;font-weight:400;white-space:nowrap;}
         #spritz-controls{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);text-align:center;padding:15px 25px;background:rgba(0,0,0,0.8);border-radius:8px;border:none;z-index:999999;pointer-events:auto;}
         #spritz-controls button{margin:0 8px;padding:8px 12px;background:#222;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;}
         #spritz-controls button:hover{background:#444;}
@@ -1441,8 +1441,15 @@
     updateProgress() {
       if (this.words.length > 0 && this.progressFill) {
         const percentage = ((this.index + 1) / this.words.length) * 100;
+        const percentText = Math.round(percentage) + '%';
+        
         this.progressFill.style.width = percentage + '%';
-        this.progressFill.setAttribute('data-percent', Math.round(percentage) + '%');
+        this.progressFill.setAttribute('data-percent', percentText);
+        
+        // Alt kısımdaki yüzde göstergesi
+        if (this.progressText) {
+          this.progressText.textContent = percentText;
+        }
       }
     }
     
