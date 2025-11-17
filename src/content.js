@@ -1511,45 +1511,8 @@
     }
     
     renderPageMarkers() {
-      if (!this.progressBar || this.pdfPageBoundaries.length === 0) {
-        return;
-      }
-      
-      console.log('🎨 Sayfa markerları çiziliyor (eşit bölünmüş cetvel)...');
-      
-      // Önceki markerları ve numaraları temizle
-      const oldMarkers = this.progressBar.querySelectorAll('.pdf-page-marker, .pdf-page-number');
-      oldMarkers.forEach(m => m.remove());
-      
-      const totalPages = this.pdfPageBoundaries.length + 1;
-      
-      // HER SAYFA EŞİT GENİŞLİKTE - yüzdeye göre eşit bölünmüş
-      for (let pageNum = 0; pageNum <= totalPages; pageNum++) {
-        const percentage = (pageNum / totalPages) * 100;
-        
-        if (pageNum === totalPages) continue; // Son çizgi çubuk bitiminde
-        
-        // Her sayfa için marker çizgisi
-        const marker = document.createElement('div');
-        marker.className = 'pdf-page-marker';
-        marker.style.left = percentage + '%';
-        marker.title = `Sayfa ${pageNum + 1}`;
-        this.progressBar.appendChild(marker);
-        
-        // Sayfa numarası göster (her 5 sayfada bir veya toplam ≤20 ise hepsini)
-        const shouldShowNumber = totalPages <= 20 || (pageNum + 1) % 5 === 0 || pageNum === 0;
-        
-        if (shouldShowNumber) {
-          const pageNumber = document.createElement('div');
-          pageNumber.className = 'pdf-page-number';
-          pageNumber.style.left = percentage + '%';
-          pageNumber.textContent = (pageNum + 1).toString();
-          pageNumber.title = `Sayfa ${pageNum + 1}`;
-          this.progressBar.appendChild(pageNumber);
-        }
-      }
-      
-      console.log(`✅ ${totalPages} sayfa için eşit bölünmüş cetvel oluşturuldu`);
+      // Cetvel kaldırıldı - sadece alt kısımdaki sayfa bilgisi gösteriliyor
+      console.log('📏 Cetvel devre dışı - sayfa bilgisi alt kısımda gösteriliyor');
     }
     
     play(){
