@@ -778,17 +778,23 @@
       this.originalText = ''; // Orijinal metin (filtrelenmemiş)
       this.filteredText = ''; // Filtrelenmiş metin
       this.pdfPageBoundaries = []; // PDF sayfa sınırları (kelime indexleri)
+      
+      // Kazanım takibi
+      this.sessionStartTime = null; // Oturum başlangıç
+      this.sessionWordsRead = 0; // Bu oturumda okunan kelime sayısı
+      
       this.loadSettings(); // Ayarları yükle
     }
     
     // Kullanıcı ayarlarını yükle
     async loadSettings(){
       return new Promise((resolve) => {
-        chrome.storage.sync.get(['defaultWPM', 'selectedFont', 'excludeWords', 'cleanPDFText'], (res) => {
+        chrome.storage.sync.get(['defaultWPM', 'selectedFont', 'excludeWords', 'cleanPDFText', 'showGains'], (res) => {
           this.wpm = res.defaultWPM || 250;
           this.selectedFont = res.selectedFont || 'georgia';
           this.excludeWords = res.excludeWords || '';
           this.cleanPDFText = res.cleanPDFText !== false; // Varsayılan: true
+          this.showGains = res.showGains !== false; // Varsayılan: true
           this.settingsLoaded = true;
           console.log('📋 Ayarlar yüklendi - WPM:', this.wpm, 'cleanPDFText:', this.cleanPDFText, 'excludeWords:', this.excludeWords ? `"${this.excludeWords}"` : '(boş)');
           this.setupUI(); // UI'yi ayarlarla birlikte kur
@@ -1422,6 +1428,11 @@
         return;
       }
       
+      // Okunan kelime sayısını artır
+      if (this.isPlaying) {
+        this.sessionWordsRead++;
+      }
+      
       // Gerçek ORP (Optimal Reading Point) hesaplaması
       const len = word.length;
       let pivotIndex;
@@ -1548,6 +1559,12 @@
       this.isPlaying = true;
       console.log('✅ Oynatma başladı');
       
+      // Oturum başlat (ilk kez başlatılıyorsa)
+      if (!this.sessionStartTime) {
+        this.sessionStartTime = Date.now();
+        this.sessionWordsRead = 0;
+      }
+      
       this.restartInterval();
     }
     
@@ -1563,12 +1580,85 @@
     
     stop(){
       this.pause();
+      
+      // Kazanım göster (ayar açıksa ve okuma yapılmışsa)
+      if (this.showGains && this.sessionStartTime && this.sessionWordsRead > 0) {
+        this.showGainsSummary();
+      }
+      
       if(this.container && this.container.parentNode) {
         this.container.parentNode.removeChild(this.container);
       }
       if(window.spritzPlayer === this) {
         window.spritzPlayer = null;
       }
+    }
+    
+    showGainsSummary() {
+      const sessionDuration = (Date.now() - this.sessionStartTime) / 1000; // saniye
+      const wordsRead = this.sessionWordsRead;
+      const actualWPM = (wordsRead / sessionDuration) * 60;
+      
+      // Geleneksel okuma hızı: 200 kelime/dakika
+      const traditionalWPM = 200;
+      const traditionalTime = (wordsRead / traditionalWPM) * 60; // saniye
+      const timeSaved = traditionalTime - sessionDuration; // saniye
+      
+      // Toplam kazanımı storage'dan al ve güncelle
+      chrome.storage.sync.get(['totalTimeSaved', 'totalWordsRead', 'totalSessions'], (res) => {
+        const newTotalTimeSaved = (res.totalTimeSaved || 0) + timeSaved;
+        const newTotalWordsRead = (res.totalWordsRead || 0) + wordsRead;
+        const newTotalSessions = (res.totalSessions || 0) + 1;
+        
+        // Yeni toplamları kaydet
+        chrome.storage.sync.set({
+          totalTimeSaved: newTotalTimeSaved,
+          totalWordsRead: newTotalWordsRead,
+          totalSessions: newTotalSessions
+        });
+        
+        // Özet göster
+        this.displayGainsSummary({
+          sessionTime: sessionDuration,
+          wordsRead: wordsRead,
+          actualWPM: Math.round(actualWPM),
+          timeSaved: timeSaved,
+          totalTimeSaved: newTotalTimeSaved,
+          totalWordsRead: newTotalWordsRead,
+          totalSessions: newTotalSessions
+        });
+      });
+    }
+    
+    displayGainsSummary(stats) {
+      const formatTime = (seconds) => {
+        if (seconds < 60) return `${Math.round(seconds)} saniye`;
+        const minutes = Math.floor(seconds / 60);
+        const secs = Math.round(seconds % 60);
+        if (minutes < 60) return `${minutes} dk ${secs} sn`;
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        return `${hours} saat ${mins} dk`;
+      };
+      
+      const message = `
+📊 OKUMA KAZANIM ÖZETİ
+
+Bu Oturum:
+✅ ${stats.wordsRead.toLocaleString()} kelime okundu
+⚡ ${stats.actualWPM} kelime/dakika hızında
+⏱️ ${formatTime(stats.sessionTime)} sürede tamamlandı
+🎯 Kazanılan süre: ${formatTime(stats.timeSaved)}
+
+Toplam İstatistikler:
+📚 ${stats.totalSessions} okuma oturumu
+📖 ${stats.totalWordsRead.toLocaleString()} kelime okundu
+🏆 Toplam kazanılan süre: ${formatTime(stats.totalTimeSaved)}
+
+Geleneksel okumaya göre ${stats.totalTimeSaved > 3600 ? Math.round(stats.totalTimeSaved / 3600) + 'x daha hızlı!' : 'çok daha hızlı okuyorsunuz!'}
+      `.trim();
+      
+      alert(message);
     }
     
     goToStart(){
