@@ -1,0 +1,230 @@
+/* Odaklanmış okuma için minimalist stil */
+#spritz-widget-root{ 
+  position: fixed; inset:0; z-index:999998; pointer-events:none; 
+}
+
+/* Tamamen karanlık fon - odaklanma için */
+#spritz-backdrop{ 
+  position:fixed; inset:0; background:#000; pointer-events:auto; z-index: 1;
+}
+
+/* Merkez okuma alanı - transparan ve minimal */
+#spritz-overlay{ 
+  pointer-events:none; position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); 
+  background:transparent; color:#fff; padding:0; 
+  max-width:100%; border:none; z-index: 2;
+}
+
+/* Display container - metin için merkez */
+#spritz-display-container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100vw;
+  min-height: 150px;
+  z-index: 999999;
+  text-align: center;
+}
+
+/* Ana okuma alanı - pivot harf her zaman merkezde */
+#spritz-display{ 
+  font-size: 52px; 
+  text-align: center;
+  font-weight: 400; 
+  line-height: 1.1; 
+  font-family: 'Courier New', Courier, monospace; 
+  letter-spacing: 0;
+  display: inline-block;
+  white-space: pre;
+}
+
+/* Progress bar konteyner - sabit konum */
+#spritz-progress-container {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 400px;
+  text-align: center;
+  z-index: 999999;
+  pointer-events: auto;
+}
+
+/* Progress bar */
+#spritz-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: #333;
+  border-radius: 3px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+/* Progress bar dolgusu */
+#spritz-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #007bff, #0056b3);
+  border-radius: 3px;
+  width: 0%;
+  transition: width 0.1s ease-out;
+}
+
+/* Progress text - sadece pause'da görünür */
+#spritz-progress-text {
+  color: #aaa;
+  font-size: 12px;
+  font-weight: normal;
+  margin-top: 5px;
+}
+
+/* Kelime vurguları - sade renkler */
+.spritz-left{ 
+  color:#888; 
+}
+.spritz-pivot{ 
+  color:#ffdd44; font-weight:700; 
+}
+.spritz-right{ 
+  color:#888; 
+}
+
+/* Kontrol alanı - sabit alt konum medya player gibi */
+#spritz-controls{ 
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  padding: 15px 25px;
+  background: rgba(0,0,0,0.8);
+  border-radius: 8px;
+  border: none;
+  z-index: 999999;
+  pointer-events: auto;
+}
+#spritz-controls button{ 
+  margin:0 8px; padding:8px 12px; background:#222; color:#fff; 
+  border:none; border-radius:4px; cursor:pointer; font-size:14px; 
+}
+#spritz-controls button:hover{ 
+  background:#444; 
+}
+#spritz-controls input[type=number]{ 
+  width:80px; padding:6px; margin:0 4px; background:#222; 
+  color:#fff; border:1px solid #555; border-radius:4px; 
+  text-align:center;
+}
+#spritz-controls label{ 
+  color:#aaa; font-size:14px; 
+}
+
+/* PDF Drop Zone - sadece eklenti açıkken */
+#spritz-dropzone {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.9);
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+#spritz-dropzone-content {
+  text-align: center;
+  color: #fff;
+  font-size: 24px;
+  padding: 40px;
+  border: 3px dashed #007bff;
+  border-radius: 12px;
+  background: rgba(0,123,255,0.1);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+#spritz-dropzone-content:hover {
+  border-color: #28a745;
+  background: rgba(40,167,69,0.2);
+}
+
+#spritz-dropzone-content div:first-child {
+  font-size: 64px;
+  margin-bottom: 20px;
+}
+
+#spritz-dropzone-content div:nth-child(2) {
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
+#spritz-dropzone-content div:last-child {
+  font-size: 16px;
+  color: #aaa;
+}
+
+/* PDF Loading Status */
+#spritz-loading-status {
+  text-align: center;
+  color: #fff;
+  padding: 40px;
+  max-width: 500px;
+  display: none;
+}
+
+#spritz-loading-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+#spritz-loading-text {
+  font-size: 24px;
+  margin-bottom: 10px;
+  font-weight: 600;
+  color: #007bff;
+}
+
+#spritz-loading-detail {
+  font-size: 16px;
+  color: #aaa;
+  margin-bottom: 20px;
+  min-height: 24px;
+}
+
+#spritz-loading-progress {
+  width: 100%;
+  height: 8px;
+  background: #333;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 20px;
+}
+
+#spritz-loading-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #007bff, #00d4ff);
+  border-radius: 4px;
+  width: 0%;
+  transition: width 0.3s ease-out;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#spritz-loading-progress-bar::after {
+  content: attr(data-percent);
+  position: absolute;
+  color: white;
+  font-size: 11px;
+  font-weight: bold;
+  text-shadow: 0 0 3px rgba(0,0,0,0.5);
+}

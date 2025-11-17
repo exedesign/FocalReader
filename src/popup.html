@@ -1,0 +1,66 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>HızlıOkuma Kontrol</title>
+    <style>
+      body{
+        font-family: Arial, sans-serif; 
+        min-width:280px; 
+        padding:15px;
+        margin:0;
+        background:#1a1a1a;
+        color:#e0e0e0;
+      }
+      h3{
+        color:#ffffff;
+        margin-top:0;
+        text-align:center;
+        border-bottom:2px solid #444;
+        padding-bottom:8px;
+      }
+      p{
+        color:#cccccc;
+        font-size:13px;
+        line-height:1.4;
+        margin:12px 0;
+        text-align:center;
+      }
+      button{
+        margin:8px 4px;
+        padding:10px 15px;
+        width:calc(50% - 8px);
+        background:#007bff;
+        color:#ffffff;
+        border:none;
+        border-radius:5px;
+        cursor:pointer;
+        font-size:14px;
+        transition:background-color 0.2s;
+      }
+      button:hover{
+        background:#0056b3;
+      }
+      button#options{
+        background:#28a745;
+      }
+      button#options:hover{
+        background:#1e7e34;
+      }
+      .button-container{
+        display:flex;
+        justify-content:space-between;
+        margin-top:15px;
+      }
+    </style>
+  </head>
+  <body>
+    <h3>⚡ HızlıOkuma</h3>
+    <p>Metin seçip butona tıklayın veya sayfa içeriğini otomatik okutun.</p>
+    <div class="button-container">
+      <button id="start">📖 Okumaya Başla</button>
+      <button id="options">⚙️ Ayarlar</button>
+    </div>
+    <script src="popup.js"></script>
+  </body>
+</html>

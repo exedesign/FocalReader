@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "FocalReader - Hızlı Okuma Eklentisi",
+  "version": "0.4.0",
+  "description": "Web sayfaları ve PDF dosyalarını odak noktası tabanlı hızlı okuma tekniği ile okuyun. Kelime başına optimal okuma noktası (ORP) ile dikkatinizi artırın.",
+  "permissions": ["activeTab", "scripting", "storage", "contextMenus"],
+  "host_permissions": ["<all_urls>", "file:///*"],
+  "background": { "service_worker": "src/background.js" },
+  "action": { "default_popup": "src/popup.html" },
+  "options_page": "src/options.html",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["lib/pdf.min.js", "src/content.js"],
+      "run_at": "document_end",
+      "all_frames": false
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["src/styles.css", "lib/pdf.min.js", "lib/pdf.worker.min.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

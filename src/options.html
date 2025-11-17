@@ -1,0 +1,126 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>HızlıOkuma Ayarlar</title>
+    <style>
+      body{
+        font-family:Arial;
+        padding:20px;
+        max-width:600px;
+        background:#1a1a1a;
+        color:#e0e0e0;
+        margin:0;
+      }
+      h2{
+        color:#ffffff;
+        border-bottom:2px solid #444;
+        padding-bottom:8px;
+      }
+      h3{
+        color:#cccccc;
+        margin-top:30px;
+        margin-bottom:15px;
+      }
+      label{
+        display:block;
+        margin:12px 0;
+        font-size:14px;
+        color:#e0e0e0;
+      }
+      select,input[type=number],input[type=text]{
+        margin-left:10px;
+        padding:8px;
+        border:1px solid #555;
+        border-radius:4px;
+        background:#2a2a2a;
+        color:#ffffff;
+      }
+      select{
+        min-width:200px;
+      }
+      input[type=number]{
+        width:100px;
+      }
+      input[type=text]{
+        width:300px;
+      }
+      button{
+        background:#007bff;
+        color:white;
+        border:none;
+        padding:12px 20px;
+        border-radius:4px;
+        cursor:pointer;
+        margin-top:20px;
+        margin-right:10px;
+      }
+      button:hover{
+        background:#0056b3;
+      }
+      button.test{
+        background:#28a745;
+      }
+      button.test:hover{
+        background:#1e7e34;
+      }
+      #status{
+        margin-top:15px;
+        color:#28a745;
+        font-weight:bold;
+        padding:10px;
+        background:#333;
+        border-radius:4px;
+        border-left:4px solid #28a745;
+      }
+      small{
+        color:#aaa;
+        font-size:12px;
+        display:block;
+        margin-top:5px;
+      }
+      .setting-group{
+        margin-bottom:20px;
+        padding:15px;
+        background:#2a2a2a;
+        border-radius:6px;
+        border:1px solid #444;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>⚙️ HızlıOkuma Ayarlar</h2>
+    
+    <div class="setting-group">
+      <h3>Okuma Ayarları</h3>
+      <label>Font Seçimi:
+        <select id="font-select">
+          <option value="georgia">Georgia (Serif - Rahat Okuma)</option>
+          <option value="verdana">Verdana (Sans-serif - Net)</option>
+          <option value="arial">Arial (Sans-serif - Standart)</option>
+          <option value="times">Times New Roman (Serif - Klasik)</option>
+          <option value="helvetica">Helvetica (Sans-serif - Modern)</option>
+          <option value="opensans">Open Sans (Sans-serif - Web)</option>
+        </select>
+      </label>
+      
+      <label>Varsayılan WPM (Dakikada Kelime):
+        <input type="number" id="default-wpm" min="50" max="1000" value="250">
+      </label>
+    </div>
+    
+    <div class="setting-group">
+      <h3>Kelime Filtresi</h3>
+      <label>Hariç Tutulacak Kelimeler:
+        <input type="text" id="exclude-words" placeholder="kelime1, kelime2, kelime3...">
+        <small>Bu kelimeleri içeren cümleler okuma sırasında atlanır (virgülle ayırın)</small>
+      </label>
+    </div>
+    
+    <button id="save">💾 Kaydet</button>
+    <button id="test-settings" class="test">🧪 Test Et</button>
+    
+    <div id="status"></div>
+    <script src="options.js"></script>
+  </body>
+</html>
