@@ -304,6 +304,93 @@
   font-size: 14px;
 }
 
+/* Exclude Words Editor */
+#spritz-preview-exclude {
+  padding: 15px 25px;
+  background: #1f1f1f;
+  border-bottom: 1px solid #333;
+}
+
+.exclude-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.exclude-header label {
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+#spritz-exclude-save {
+  background: #28a745;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+#spritz-exclude-save:hover {
+  background: #218838;
+}
+
+#spritz-exclude-textarea {
+  width: 100%;
+  min-height: 60px;
+  padding: 10px;
+  background: #0a0a0a;
+  color: #ddd;
+  border: 1px solid #444;
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  resize: vertical;
+  margin-bottom: 10px;
+}
+
+#spritz-exclude-textarea:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.exclude-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.exclude-actions button {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+#spritz-exclude-selection {
+  background: #17a2b8;
+  color: #fff;
+}
+
+#spritz-exclude-selection:hover {
+  background: #138496;
+}
+
+#spritz-exclude-clear {
+  background: #6c757d;
+  color: #fff;
+}
+
+#spritz-exclude-clear:hover {
+  background: #5a6268;
+}
+
 .stat-label {
   font-weight: 600;
   color: #ccc;

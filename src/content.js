@@ -816,6 +816,17 @@
               <button id="spritz-preview-close" type="button">✕</button>
             </div>
             <div id="spritz-preview-stats"></div>
+            <div id="spritz-preview-exclude">
+              <div class="exclude-header">
+                <label>🚫 Hariç Tutulacak Kelimeler/Cümleler:</label>
+                <button id="spritz-exclude-save" type="button">✔️ Kaydet</button>
+              </div>
+              <textarea id="spritz-exclude-textarea" placeholder="Virgülle ayrılmış kelimeler girin: reklam,ilan,kampanya..."></textarea>
+              <div class="exclude-actions">
+                <button id="spritz-exclude-selection" type="button" title="Seçili metni hariç tut">➕ Seçili Metni Ekle</button>
+                <button id="spritz-exclude-clear" type="button" title="Temizle">🗑️ Temizle</button>
+              </div>
+            </div>
             <div id="spritz-preview-tabs">
               <button class="preview-tab active" data-tab="original">📄 Orijinal Metin</button>
               <button class="preview-tab" data-tab="filtered">✅ Filtrelenmiş Metin</button>
@@ -1518,6 +1529,101 @@
           if (targetContent) targetContent.classList.add('active');
         });
       });
+      
+      // excludeWords editörünü doldur
+      const excludeTextarea = this.container.querySelector('#spritz-exclude-textarea');
+      if (excludeTextarea) {
+        excludeTextarea.value = this.excludeWords || '';
+      }
+      
+      // Kaydet butonu
+      const saveBtn = this.container.querySelector('#spritz-exclude-save');
+      if (saveBtn) {
+        saveBtn.onclick = async () => {
+          const newExcludeWords = excludeTextarea.value.trim();
+          this.excludeWords = newExcludeWords;
+          
+          // Ayarlara kaydet
+          try {
+            await chrome.storage.sync.set({ excludeWords: newExcludeWords });
+            console.log('✅ excludeWords kaydedildi:', newExcludeWords);
+            
+            // Metni yeniden filtrele
+            if (this.originalText) {
+              const sentences = this.originalText.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 0);
+              const filteredSentences = this.filterSentences(sentences);
+              this.filteredText = filteredSentences.join('. ');
+              
+              // İçerikleri güncelle
+              if (filteredContent) {
+                filteredContent.textContent = this.filteredText;
+              }
+              
+              // Kelimeleri güncelle
+              this.setText(this.filteredText);
+              
+              // İstatistikleri yeniden hesapla
+              const originalSentences = this.originalText.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
+              const newFilteredSentences = filteredSentences.length;
+              const newExcludedSentences = originalSentences - newFilteredSentences;
+              const originalWords = this.originalText.split(/\s+/).filter(w => w.trim().length > 0).length;
+              const newFilteredWords = this.words.length;
+              
+              if (statsEl) {
+                statsEl.innerHTML = `
+                  <div class="stat-item">
+                    <span class="stat-label">📄 Orijinal:</span>
+                    <span class="stat-value">${originalSentences.toLocaleString()} cümle, ${originalWords.toLocaleString()} kelime</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-label">✅ Filtrelenmiş:</span>
+                    <span class="stat-value">${newFilteredSentences.toLocaleString()} cümle, ${newFilteredWords.toLocaleString()} kelime</span>
+                  </div>
+                  <div class="stat-item ${newExcludedSentences > 0 ? 'stat-excluded' : ''}">
+                    <span class="stat-label">🚫 Hariç tutulan:</span>
+                    <span class="stat-value">${newExcludedSentences.toLocaleString()} cümle (${originalWords - newFilteredWords} kelime)</span>
+                  </div>
+                `;
+              }
+              
+              alert('✅ Filtre kaydedildi ve metin yeniden işlendi!');
+            }
+          } catch (error) {
+            console.error('❌ Kaydetme hatası:', error);
+            alert('❌ Kaydetme hatası: ' + error.message);
+          }
+        };
+      }
+      
+      // Seçili metni ekle butonu
+      const addSelectionBtn = this.container.querySelector('#spritz-exclude-selection');
+      if (addSelectionBtn) {
+        addSelectionBtn.onclick = () => {
+          const selection = window.getSelection().toString().trim();
+          if (!selection) {
+            alert('⚠️ Lütfen önce bir metin seçin!');
+            return;
+          }
+          
+          // Mevcut değere ekle
+          const current = excludeTextarea.value.trim();
+          const newValue = current ? `${current}, ${selection}` : selection;
+          excludeTextarea.value = newValue;
+          
+          console.log('➕ Seçili metin eklendi:', selection);
+          alert(`✅ "${selection}" eklendi!\n\nKaydetmek için "✔️ Kaydet" butonuna tıklayın.`);
+        };
+      }
+      
+      // Temizle butonu
+      const clearBtn = this.container.querySelector('#spritz-exclude-clear');
+      if (clearBtn) {
+        clearBtn.onclick = () => {
+          if (confirm('🗑️ Tüm hariç tutma filtrelerini temizlemek istediğinize emin misiniz?')) {
+            excludeTextarea.value = '';
+          }
+        };
+      }
       
       // Kapat butonu
       const closeBtn = this.container.querySelector('#spritz-preview-close');
