@@ -878,6 +878,7 @@
         </div>
       `;
       this.displayEl = this.container.querySelector('#spritz-display');
+      this.progressBar = this.container.querySelector('#spritz-progress-bar');
       this.progressFill = this.container.querySelector('#spritz-progress-fill');
       this.progressText = this.container.querySelector('#spritz-progress-text');
       
@@ -1510,14 +1511,14 @@
     }
     
     renderPageMarkers() {
-      if (!this.progressFill || this.pdfPageBoundaries.length === 0) {
+      if (!this.progressBar || this.pdfPageBoundaries.length === 0) {
         return;
       }
       
       console.log('🎨 Sayfa markerları çiziliyor (eşit bölünmüş cetvel)...');
       
       // Önceki markerları ve numaraları temizle
-      const oldMarkers = this.progressFill.querySelectorAll('.pdf-page-marker, .pdf-page-number');
+      const oldMarkers = this.progressBar.querySelectorAll('.pdf-page-marker, .pdf-page-number');
       oldMarkers.forEach(m => m.remove());
       
       const totalPages = this.pdfPageBoundaries.length + 1;
@@ -1533,7 +1534,7 @@
         marker.className = 'pdf-page-marker';
         marker.style.left = percentage + '%';
         marker.title = `Sayfa ${pageNum + 1}`;
-        this.progressFill.appendChild(marker);
+        this.progressBar.appendChild(marker);
         
         // Sayfa numarası göster (her 5 sayfada bir veya toplam ≤20 ise hepsini)
         const shouldShowNumber = totalPages <= 20 || (pageNum + 1) % 5 === 0 || pageNum === 0;
@@ -1544,7 +1545,7 @@
           pageNumber.style.left = percentage + '%';
           pageNumber.textContent = (pageNum + 1).toString();
           pageNumber.title = `Sayfa ${pageNum + 1}`;
-          this.progressFill.appendChild(pageNumber);
+          this.progressBar.appendChild(pageNumber);
         }
       }
       
