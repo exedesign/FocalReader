@@ -1,0 +1,19 @@
+# Python Bağımlılıkları - PDF OCR Formatter
+# ==========================================
+# 
+# Kurulum:
+#   pip install -r requirements.txt
+#
+# Tesseract OCR'ın ayrıca sisteminize kurulu olması gerekir!
+
+# Tesseract OCR Python bağlantısı
+pytesseract>=0.3.10
+
+# PDF'den resim çıkarma
+pdf2image>=1.16.3
+
+# Resim işleme kütüphanesi
+Pillow>=10.0.0
+
+# Not: Windows kullanıcıları için poppler da gereklidir
+# Poppler kurulumu: https://github.com/oschwartz10612/poppler-windows/releases/

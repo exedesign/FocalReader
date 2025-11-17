@@ -3,3 +3,9 @@ package-lock.json
 *.log
 .DS_Store
 Thumbs.db
+
+# Python OCR Tool
+tools/Cikti_Senaryo.md
+tools/__pycache__/
+tools/*.pyc
+*.pdf
