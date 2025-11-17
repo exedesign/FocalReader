@@ -701,6 +701,7 @@
       this.wpm = 250; // Varsayılan, ayarlardan yüklenir
       this.selectedFont = 'georgia'; // Varsayılan font
       this.excludeWords = ''; // Hariç tutulacak kelimeler
+      this.speedMultiplier = 1; // Hız çarpanı
       this.interval = null;
       this.words = [];
       this.index = 0;
@@ -753,11 +754,21 @@
           <div id="spritz-progress-text" style="display: none;">0%</div>
         </div>
         <div id="spritz-controls">
-          <button id="spritz-play" type="button">▶</button>
-          <button id="spritz-pause" type="button">⏸</button>
+          <button id="spritz-start" type="button" title="Başa sar">⏮️</button>
+          <button id="spritz-backward" type="button" title="10 kelime geri">⏪</button>
+          <button id="spritz-play" type="button" title="Oynat">▶</button>
+          <button id="spritz-pause" type="button" title="Duraklat">⏸</button>
+          <button id="spritz-forward" type="button" title="10 kelime ileri">⏩</button>
+          <button id="spritz-end" type="button" title="Sona git">⏭️</button>
           <label>WPM <input id="spritz-wpm" type="number" min="50" max="2000" value="${this.wpm}"></label>
-          <button id="spritz-upload" type="button">📄 PDF</button>
-          <button id="spritz-close" type="button">✕</button>
+          <select id="spritz-speed" title="Hız çarpanı">
+            <option value="0.5">0.5x</option>
+            <option value="1" selected>1x</option>
+            <option value="1.5">1.5x</option>
+            <option value="2">2x</option>
+          </select>
+          <button id="spritz-upload" type="button" title="PDF Yükle">📄 PDF</button>
+          <button id="spritz-close" type="button" title="Kapat">✕</button>
         </div>
         <div id="spritz-dropzone" style="display: none;">
           <div id="spritz-dropzone-content">
@@ -780,10 +791,15 @@
       this.progressText = this.container.querySelector('#spritz-progress-text');
       
       // Event listeners
+      this.container.querySelector('#spritz-start').addEventListener('click', ()=>this.goToStart());
+      this.container.querySelector('#spritz-backward').addEventListener('click', ()=>this.skipBackward(10));
       this.container.querySelector('#spritz-play').addEventListener('click', ()=>this.play());
       this.container.querySelector('#spritz-pause').addEventListener('click', ()=>this.pause());
+      this.container.querySelector('#spritz-forward').addEventListener('click', ()=>this.skipForward(10));
+      this.container.querySelector('#spritz-end').addEventListener('click', ()=>this.goToEnd());
       this.container.querySelector('#spritz-close').addEventListener('click', ()=>this.stop());
       this.container.querySelector('#spritz-wpm').addEventListener('change', (e)=>{ this.wpm = Number(e.target.value); if(this.isPlaying) this.restartInterval(); });
+      this.container.querySelector('#spritz-speed').addEventListener('change', (e)=>{ this.setSpeedMultiplier(Number(e.target.value)); });
       
       // PDF Upload butonu
       this.container.querySelector('#spritz-upload').addEventListener('click', ()=>this.showDropzone());
@@ -923,6 +939,13 @@
     
     async handlePDFFile(file) {
       console.log('🔴 handlePDFFile BAŞLADI:', file.name, file.type);
+      
+      // Ayarların yüklendiğinden emin ol
+      if (!this.settingsLoaded) {
+        console.log('⏳ Ayarlar henüz yüklenmemiş, yükleniyor...');
+        await this.loadSettings();
+      }
+      console.log('✅ Ayarlar hazır - excludeWords:', this.excludeWords);
       
       // Loading ekranını göster
       this.showLoadingStatus('📁 Adım 1/7: Dosya kontrol ediliyor...', file.name + ' (' + (file.size / 1024 / 1024).toFixed(2) + ' MB)');
@@ -1151,8 +1174,8 @@
     }
     
     calcDelay(word){
-      // kelime başına ms
-      return 60000 / this.wpm;
+      // kelime başına ms (hız çarpanı ile)
+      return (60000 / this.wpm) / this.speedMultiplier;
     }
     showWord(word){
       if (!word || typeof word !== 'string' || word.length === 0) {
@@ -1242,6 +1265,66 @@
       }
       if(window.spritzPlayer === this) {
         window.spritzPlayer = null;
+      }
+    }
+    
+    goToStart(){
+      this.index = 0;
+      if (this.words.length > 0) {
+        this.showWord(this.words[0]);
+        this.updateProgress();
+      }
+      if(this.isPlaying) {
+        this.pause();
+      }
+      console.log('⏮️ Başa sarıldı');
+    }
+    
+    goToEnd(){
+      this.index = Math.max(0, this.words.length - 1);
+      if (this.words.length > 0) {
+        this.showWord(this.words[this.index]);
+        this.updateProgress();
+      }
+      if(this.isPlaying) {
+        this.pause();
+      }
+      console.log('⏭️ Sona gidildi');
+    }
+    
+    skipForward(count){
+      const wasPlaying = this.isPlaying;
+      if(wasPlaying) this.pause();
+      
+      this.index = Math.min(this.index + count, this.words.length - 1);
+      if (this.words.length > 0) {
+        this.showWord(this.words[this.index]);
+        this.updateProgress();
+      }
+      console.log('⏩ ' + count + ' kelime ileri');
+      
+      if(wasPlaying) this.play();
+    }
+    
+    skipBackward(count){
+      const wasPlaying = this.isPlaying;
+      if(wasPlaying) this.pause();
+      
+      this.index = Math.max(0, this.index - count);
+      if (this.words.length > 0) {
+        this.showWord(this.words[this.index]);
+        this.updateProgress();
+      }
+      console.log('⏪ ' + count + ' kelime geri');
+      
+      if(wasPlaying) this.play();
+    }
+    
+    setSpeedMultiplier(multiplier){
+      this.speedMultiplier = multiplier;
+      console.log('⚡ Hız çarpanı:', multiplier + 'x');
+      if(this.isPlaying) {
+        this.restartInterval();
       }
     }
     
