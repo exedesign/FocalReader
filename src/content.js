@@ -517,10 +517,16 @@
         // Satır sonu tire birleştirme
         let cleanedText = pageText.replace(/(\w+)-\s+(\w+)/g, '$1$2');
         
-        // Türkçe karakterlerin önündeki ve arkasındaki boşlukları temizle
-        // "u ş ak" -> "uşak", "ya ş lı" -> "yaşlı", "aya ğ a" -> "ayağa"
-        cleanedText = cleanedText.replace(/\s+([ğĞüÜşŞıİöÖçÇ])/g, '$1');
-        cleanedText = cleanedText.replace(/([ğĞüÜşŞıİöÖçÇ])\s+/g, '$1');
+        // Sadece kelime içindeki Türkçe karakter boşluklarını temizle (kelimeler arasını koru)
+        // "u ş ak" -> "uşak", "ya ş lı" -> "yaşlı" ama "bir ş apka" -> "bir şapka"
+        const tr = '[ğĞüÜşŞıİöÖçÇ]';
+        const letter = '[a-zA-ZğĞüÜşŞıİöÖçÇ]';
+        // Harf + boşluk + Türkçe karakter + harf (kelime içi)
+        cleanedText = cleanedText.replace(new RegExp(`(${letter})\\s+(${tr})(${letter})`, 'g'), '$1$2$3');
+        // Harf + Türkçe karakter + boşluk + harf (kelime içi)
+        cleanedText = cleanedText.replace(new RegExp(`(${letter})(${tr})\\s+(${letter})`, 'g'), '$1$2$3');
+        // Harf + boşluk + Türkçe karakter + boşluk + harf (çift boşluk)
+        cleanedText = cleanedText.replace(new RegExp(`(${letter})\\s+(${tr})\\s+(${letter})`, 'g'), '$1$2$3');
         
         fullText += cleanedText + ' ';
       }      console.log('Text extraction completed, total length:', fullText.length);
@@ -1219,10 +1225,16 @@
           // Satır sonu tire birleştirme
           let cleanedText = pageText.replace(/(\w+)-\s+(\w+)/g, '$1$2');
           
-          // Türkçe karakterlerin önündeki ve arkasındaki boşlukları temizle
-          // "u ş ak" -> "uşak", "ya ş lı" -> "yaşlı", "aya ğ a" -> "ayağa"
-          cleanedText = cleanedText.replace(/\s+([ğĞüÜşŞıİöÖçÇ])/g, '$1');
-          cleanedText = cleanedText.replace(/([ğĞüÜşŞıİöÖçÇ])\s+/g, '$1');
+          // Sadece kelime içindeki Türkçe karakter boşluklarını temizle (kelimeler arasını koru)
+          // "u ş ak" -> "uşak", "ya ş lı" -> "yaşlı" ama "bir ş apka" -> "bir şapka"
+          const tr = '[ğĞüÜşŞıİöÖçÇ]';
+          const letter = '[a-zA-ZğĞüÜşŞıİöÖçÇ]';
+          // Harf + boşluk + Türkçe karakter + harf (kelime içi)
+          cleanedText = cleanedText.replace(new RegExp(`(${letter})\\s+(${tr})(${letter})`, 'g'), '$1$2$3');
+          // Harf + Türkçe karakter + boşluk + harf (kelime içi)
+          cleanedText = cleanedText.replace(new RegExp(`(${letter})(${tr})\\s+(${letter})`, 'g'), '$1$2$3');
+          // Harf + boşluk + Türkçe karakter + boşluk + harf (çift boşluk)
+          cleanedText = cleanedText.replace(new RegExp(`(${letter})\\s+(${tr})\\s+(${letter})`, 'g'), '$1$2$3');
           
           console.log(`   ✅ Sayfa ${i} - ${cleanedText.length} karakter`);
           fullText += cleanedText + ' ';
