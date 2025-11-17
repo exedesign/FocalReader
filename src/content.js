@@ -513,7 +513,6 @@
           
           return str;
         }).filter(s => s.length > 0).join(' ');
-        }
         
         // Satır sonu tire birleştirme
         let cleanedText = pageText.replace(/(\w+)-\s+(\w+)/g, '$1$2');
