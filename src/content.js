@@ -465,38 +465,57 @@
         const pageText = textContent.items.map(item => {
           let str = item.str || '';
           
-          // NFC ve NFD normalizasyonu - birleşik karakterler için
+          // Boş veya sadece whitespace içeren stringleri atla
+          if (!str || !str.trim()) return '';
+          
+          // NFC normalizasyonu
           str = str.normalize('NFC');
           
-          // Yaygın PDF encoding hatalarını düzelt - GENİŞLETİLMİŞ
+          // KAPSAMLI Türkçe karakter haritası
           const turkishCharMap = {
-            // Türkçe karakterler - birden fazla Unicode varyantı
-            '\u0131': 'ı', '\u0049': 'I', '\u0069': 'i', '\u0130': 'İ',  // ı, I, i, İ
-            '\u015F': 'ş', '\u015E': 'Ş',  // ş, Ş  
-            '\u011F': 'ğ', '\u011E': 'Ğ',  // ğ, Ğ
-            '\u00E7': 'ç', '\u00C7': 'Ç',  // ç, Ç
-            '\u00FC': 'ü', '\u00DC': 'Ü',  // ü, Ü
-            '\u00F6': 'ö', '\u00D6': 'Ö',  // ö, Ö
-            // Bozuk karakterler için alternatif eşlemeler
-            'Ä±': 'ı', 'Ä°': 'İ',  // Latin-1 encoding hataları
+            // Temel Türkçe karakterler
+            '\u0131': 'ı', '\u0130': 'İ',
+            '\u015F': 'ş', '\u015E': 'Ş',
+            '\u011F': 'ğ', '\u011E': 'Ğ',
+            '\u00E7': 'ç', '\u00C7': 'Ç',
+            '\u00FC': 'ü', '\u00DC': 'Ü',
+            '\u00F6': 'ö', '\u00D6': 'Ö',
+            // Latin-1 encoding hataları (yaygın PDF sorunu)
+            'Ä±': 'ı', 'Ä°': 'İ',
             'ÅŸ': 'ş', 'Åž': 'Ş',
             'Ä\u009F': 'ğ', 'Ä\u009E': 'Ğ',
+            // UTF-8 çift encoding hataları
+            'Ã§': 'ç', 'Ã\u0087': 'Ç',
+            'Ã¼': 'ü', 'Ã\u009c': 'Ü',
+            'Ã¶': 'ö', 'Ã\u0096': 'Ö',
+            'Ä\u00B1': 'ı', 'Ä°': 'İ',
+            'Å\u009F': 'ş', 'Å\u009E': 'Ş',
+            'Ä\u009F': 'ğ', 'Ä\u009E': 'Ğ',
+            // Bozuk karakterleri boşluk ile değiştir
+            '\uFFFD': ' ', // Replacement character
+            '\u0000': '', // Null character
+            '\u00A0': ' ', // Non-breaking space -> normal space
           };
           
           // Karakter haritasını uygula
           Object.keys(turkishCharMap).forEach(key => {
-            const regex = new RegExp(key, 'g');
-            str = str.replace(regex, turkishCharMap[key]);
+            if (str.includes(key)) {
+              const regex = new RegExp(key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+              str = str.replace(regex, turkishCharMap[key]);
+            }
           });
           
-          // Latin büyük I'yı Türkçe İ'ye çevir (kelime başı kontrolü ile)
-          str = str.replace(/\bI([a-zğüşöçı])/g, 'İ$1');
-          str = str.replace(/([a-zğüşöçı])I\b/g, '$1i');
+          // Kontrol karakterlerini temizle (ASCII 0-31, 127)
+          str = str.replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F]/g, '');
+          
+          // Birden fazla boşluğu tek boşluğa indir
+          str = str.replace(/\s+/g, ' ').trim();
           
           return str;
-        }).join(' ');
+        }).filter(s => s.length > 0).join(' ');
         
-        fullText += pageText + ' ';
+        // Satır sonu tire birleştirme
+        fullText += pageText.replace(/(\w+)-\s+(\w+)/g, '$1$2') + ' ';
       }      console.log('Text extraction completed, total length:', fullText.length);
       return fullText.trim();
       
@@ -1141,39 +1160,58 @@
           const pageText = textContent.items.map(item => {
             let str = item.str || '';
             
-            // NFC ve NFD normalizasyonu - birleşik karakterler için
+            // Boş veya sadece whitespace içeren stringleri atla
+            if (!str || !str.trim()) return '';
+            
+            // NFC normalizasyonu
             str = str.normalize('NFC');
             
-            // Yaygın PDF encoding hatalarını düzelt - GENİŞLETİLMİŞ
+            // KAPSAMLI Türkçe karakter haritası
             const turkishCharMap = {
-              // Türkçe karakterler - birden fazla Unicode varyantı
-              '\u0131': 'ı', '\u0049': 'I', '\u0069': 'i', '\u0130': 'İ',  // ı, I, i, İ
-              '\u015F': 'ş', '\u015E': 'Ş',  // ş, Ş  
-              '\u011F': 'ğ', '\u011E': 'Ğ',  // ğ, Ğ
-              '\u00E7': 'ç', '\u00C7': 'Ç',  // ç, Ç
-              '\u00FC': 'ü', '\u00DC': 'Ü',  // ü, Ü
-              '\u00F6': 'ö', '\u00D6': 'Ö',  // ö, Ö
-              // Bozuk karakterler için alternatif eşlemeler
-              'Ä±': 'ı', 'Ä°': 'İ',  // Latin-1 encoding hataları
+              // Temel Türkçe karakterler
+              '\u0131': 'ı', '\u0130': 'İ',
+              '\u015F': 'ş', '\u015E': 'Ş',
+              '\u011F': 'ğ', '\u011E': 'Ğ',
+              '\u00E7': 'ç', '\u00C7': 'Ç',
+              '\u00FC': 'ü', '\u00DC': 'Ü',
+              '\u00F6': 'ö', '\u00D6': 'Ö',
+              // Latin-1 encoding hataları (yaygın PDF sorunu)
+              'Ä±': 'ı', 'Ä°': 'İ',
               'ÅŸ': 'ş', 'Åž': 'Ş',
               'Ä\u009F': 'ğ', 'Ä\u009E': 'Ğ',
+              // UTF-8 çift encoding hataları
+              'Ã§': 'ç', 'Ã\u0087': 'Ç',
+              'Ã¼': 'ü', 'Ã\u009c': 'Ü',
+              'Ã¶': 'ö', 'Ã\u0096': 'Ö',
+              'Ä\u00B1': 'ı', 'Ä°': 'İ',
+              'Å\u009F': 'ş', 'Å\u009E': 'Ş',
+              'Ä\u009F': 'ğ', 'Ä\u009E': 'Ğ',
+              // Bozuk karakterleri boşluk ile değiştir
+              '\uFFFD': ' ', // Replacement character
+              '\u0000': '', // Null character
+              '\u00A0': ' ', // Non-breaking space -> normal space
             };
             
             // Karakter haritasını uygula
             Object.keys(turkishCharMap).forEach(key => {
-              const regex = new RegExp(key, 'g');
-              str = str.replace(regex, turkishCharMap[key]);
+              if (str.includes(key)) {
+                const regex = new RegExp(key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                str = str.replace(regex, turkishCharMap[key]);
+              }
             });
             
-            // Latin büyük I'yı Türkçe İ'ye çevir (kelime başı kontrolü ile)
-            str = str.replace(/\bI([a-zğüşöçı])/g, 'İ$1');
-            str = str.replace(/([a-zğüşöçı])I\b/g, '$1i');
+            // Kontrol karakterlerini temizle (ASCII 0-31, 127)
+            str = str.replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F]/g, '');
+            
+            // Birden fazla boşluğu tek boşluğa indir
+            str = str.replace(/\s+/g, ' ').trim();
             
             return str;
-          }).join(' ');
+          }).filter(s => s.length > 0).join(' ');
           
           console.log(`   ✅ Sayfa ${i} - ${pageText.length} karakter`);
-          fullText += pageText + ' ';
+          // Satır sonu tire birleştirme
+          fullText += pageText.replace(/(\w+)-\s+(\w+)/g, '$1$2') + ' ';
           
           // Progress güncelle
           const progress = 60 + (i / pdf.numPages) * 25; // 60-85 arası
