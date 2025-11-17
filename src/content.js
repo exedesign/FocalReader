@@ -1483,14 +1483,34 @@
           currentPage = Math.min(Math.ceil(percentage / 100 * totalPages), totalPages);
         }
         
-        // Alt kısımdaki gösterge: Yüzde ve Sayfa
+        // Alt kısımdaki gösterge: Yüzde, Sayfa ve Kazanım
         if (this.progressText) {
+          let displayText = percentText;
+          
+          // Sayfa bilgisi ekle
           if (this.pdfPageBoundaries && this.pdfPageBoundaries.length > 0) {
             const totalPages = this.pdfPageBoundaries.length + 1;
-            this.progressText.textContent = `${percentText} - Sayfa ${currentPage}/${totalPages}`;
-          } else {
-            this.progressText.textContent = percentText;
+            displayText += ` - Sayfa ${currentPage}/${totalPages}`;
           }
+          
+          // Kazanım bilgisi ekle (ayar açıksa ve okuma başlamışsa)
+          if (this.showGains && this.sessionStartTime && this.sessionWordsRead > 0) {
+            const sessionDuration = (Date.now() - this.sessionStartTime) / 1000;
+            const traditionalTime = (this.sessionWordsRead / 200) * 60;
+            const timeSaved = traditionalTime - sessionDuration;
+            
+            if (timeSaved > 0) {
+              const formatTime = (sec) => {
+                if (sec < 60) return `${Math.round(sec)}sn`;
+                const min = Math.floor(sec / 60);
+                const s = Math.round(sec % 60);
+                return `${min}dk ${s}sn`;
+              };
+              displayText += ` • Kazanım: ${formatTime(timeSaved)}`;
+            }
+          }
+          
+          this.progressText.textContent = displayText;
         }
       }
     }
@@ -1581,9 +1601,21 @@
     stop(){
       this.pause();
       
-      // Kazanım göster (ayar açıksa ve okuma yapılmışsa)
+      // Kazanım istatistiklerini kaydet (ayar açıksa ve okuma yapılmışsa)
       if (this.showGains && this.sessionStartTime && this.sessionWordsRead > 0) {
-        this.showGainsSummary();
+        const sessionDuration = (Date.now() - this.sessionStartTime) / 1000;
+        const wordsRead = this.sessionWordsRead;
+        const traditionalTime = (wordsRead / 200) * 60;
+        const timeSaved = traditionalTime - sessionDuration;
+        
+        // Toplam kazanımı storage'a kaydet
+        chrome.storage.sync.get(['totalTimeSaved', 'totalWordsRead', 'totalSessions'], (res) => {
+          chrome.storage.sync.set({
+            totalTimeSaved: (res.totalTimeSaved || 0) + timeSaved,
+            totalWordsRead: (res.totalWordsRead || 0) + wordsRead,
+            totalSessions: (res.totalSessions || 0) + 1
+          });
+        });
       }
       
       if(this.container && this.container.parentNode) {
@@ -1592,73 +1624,6 @@
       if(window.spritzPlayer === this) {
         window.spritzPlayer = null;
       }
-    }
-    
-    showGainsSummary() {
-      const sessionDuration = (Date.now() - this.sessionStartTime) / 1000; // saniye
-      const wordsRead = this.sessionWordsRead;
-      const actualWPM = (wordsRead / sessionDuration) * 60;
-      
-      // Geleneksel okuma hızı: 200 kelime/dakika
-      const traditionalWPM = 200;
-      const traditionalTime = (wordsRead / traditionalWPM) * 60; // saniye
-      const timeSaved = traditionalTime - sessionDuration; // saniye
-      
-      // Toplam kazanımı storage'dan al ve güncelle
-      chrome.storage.sync.get(['totalTimeSaved', 'totalWordsRead', 'totalSessions'], (res) => {
-        const newTotalTimeSaved = (res.totalTimeSaved || 0) + timeSaved;
-        const newTotalWordsRead = (res.totalWordsRead || 0) + wordsRead;
-        const newTotalSessions = (res.totalSessions || 0) + 1;
-        
-        // Yeni toplamları kaydet
-        chrome.storage.sync.set({
-          totalTimeSaved: newTotalTimeSaved,
-          totalWordsRead: newTotalWordsRead,
-          totalSessions: newTotalSessions
-        });
-        
-        // Özet göster
-        this.displayGainsSummary({
-          sessionTime: sessionDuration,
-          wordsRead: wordsRead,
-          actualWPM: Math.round(actualWPM),
-          timeSaved: timeSaved,
-          totalTimeSaved: newTotalTimeSaved,
-          totalWordsRead: newTotalWordsRead,
-          totalSessions: newTotalSessions
-        });
-      });
-    }
-    
-    displayGainsSummary(stats) {
-      const formatTime = (seconds) => {
-        if (seconds < 60) return `${Math.round(seconds)} saniye`;
-        const minutes = Math.floor(seconds / 60);
-        const secs = Math.round(seconds % 60);
-        if (minutes < 60) return `${minutes} dk ${secs} sn`;
-        const hours = Math.floor(minutes / 60);
-        const mins = minutes % 60;
-        return `${hours} saat ${mins} dk`;
-      };
-      
-      const message = `
-📊 OKUMA KAZANIM ÖZETİ
-
-Bu Oturum:
-✅ ${stats.wordsRead.toLocaleString()} kelime okundu
-⚡ ${stats.actualWPM} kelime/dakika hızında
-⏱️ ${formatTime(stats.sessionTime)} sürede tamamlandı
-🎯 Kazanılan süre: ${formatTime(stats.timeSaved)}
-
-Toplam İstatistikler:
-📚 ${stats.totalSessions} okuma oturumu
-📖 ${stats.totalWordsRead.toLocaleString()} kelime okundu
-🏆 Toplam kazanılan süre: ${formatTime(stats.totalTimeSaved)}
-
-Geleneksel okumaya göre ${stats.totalTimeSaved > 3600 ? Math.round(stats.totalTimeSaved / 3600) + 'x daha hızlı!' : 'çok daha hızlı okuyorsunuz!'}
-      `.trim();
-      
-      alert(message);
     }
     
     goToStart(){
