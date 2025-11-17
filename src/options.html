@@ -132,15 +132,26 @@
     <div class="setting-group">
       <h3>📄 PDF Ayarları</h3>
       
-      <label>PDF Metin Çıkarma Motoru:
+      <label>PDF Kütüphanesi:
+        <select id="pdf-library">
+          <option value="pdfjs">PDF.js (Mozilla - Tavsiye Edilen)</option>
+          <option value="native">Native Chrome PDF Viewer</option>
+        </select>
+        <small>• <strong>PDF.js:</strong> Güvenilir, açık kaynak, tam kontrol (varsayılan)<br>
+        • <strong>Native Chrome:</strong> Tarayıcı yerleşik görüntüleyici (deneysel)</small>
+      </label>
+      
+      <label>PDF.js Metin Çıkarma Modu:
         <select id="pdf-extraction-method">
-          <option value="standard">Standart (PDF.js textContent)</option>
-          <option value="enhanced">Gelişmiş (textContent + normalizeWhitespace)</option>
-          <option value="raw">Ham Metin (Raw text items)</option>
+          <option value="standard">Standart (textContent)</option>
+          <option value="enhanced">Gelişmiş (normalizeWhitespace)</option>
+          <option value="raw">Ham Metin (işlenmemiş)</option>
+          <option value="structural">Yapısal (position based)</option>
         </select>
         <small>• <strong>Standart:</strong> Normal PDF.js metin çıkarma (varsayılan)<br>
-        • <strong>Gelişmiş:</strong> Boşluk normalizasyonu ile daha temiz metin<br>
-        • <strong>Ham Metin:</strong> Filtresiz ham çıktı (temizleme manuel yapılır)</small>
+        • <strong>Gelişmiş:</strong> Boşluk normalizasyonu ile daha temiz<br>
+        • <strong>Ham Metin:</strong> Filtresiz ham çıktı<br>
+        • <strong>Yapısal:</strong> X/Y pozisyonuna göre sıralama (karmaşık düzenler için)</small>
       </label>
       
       <label>

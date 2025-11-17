@@ -466,8 +466,20 @@
           normalizeWhitespace: extractionMethod === 'enhanced'
         });
         
+        // Yapısal (structural) metod - Y pozisyonuna göre sırala
+        let items = textContent.items;
+        if (extractionMethod === 'structural') {
+          items = [...items].sort((a, b) => {
+            const yDiff = Math.abs(a.transform[5] - b.transform[5]);
+            if (yDiff < 5) { // Aynı satırda (5px tolerans)
+              return a.transform[4] - b.transform[4]; // X pozisyonuna göre sırala
+            }
+            return b.transform[5] - a.transform[5]; // Yukarıdan aşağıya
+          });
+        }
+        
         // Türkçe karakterleri düzgün çıkarmak için gelişmiş işleme
-        const pageText = textContent.items.map(item => {
+        const pageText = items.map(item => {
           let str = item.str || '';
           
           // Boş veya sadece whitespace içeren stringleri atla
@@ -831,7 +843,7 @@
     // Kullanıcı ayarlarını yükle
     async loadSettings(){
       return new Promise((resolve) => {
-        chrome.storage.sync.get(['defaultWPM', 'selectedFont', 'excludeWords', 'showGains', 'pdfExtractionMethod', 'enablePdfCleanup', 'pdfCleanupRegex', 'pdfCleanupReplacement'], (res) => {
+        chrome.storage.sync.get(['defaultWPM', 'selectedFont', 'excludeWords', 'showGains', 'pdfLibrary', 'pdfExtractionMethod', 'enablePdfCleanup', 'pdfCleanupRegex', 'pdfCleanupReplacement'], (res) => {
           this.wpm = res.defaultWPM || 250;
           this.selectedFont = res.selectedFont || 'georgia';
           this.excludeWords = res.excludeWords || '';
@@ -839,6 +851,7 @@
           
           // PDF temizleme ayarlarını global değişkene kaydet
           window.pdfCleanupSettings = {
+            library: res.pdfLibrary || 'pdfjs',
             extractionMethod: res.pdfExtractionMethod || 'standard',
             enabled: res.enablePdfCleanup !== false, // Varsayılan: true
             regex: res.pdfCleanupRegex || '([a-zğüşıöç]+)\\s+([ğüşıöçĞÜŞİÖÇ])\\s+([a-zğüşıöç]+)',
@@ -846,7 +859,7 @@
           };
           
           this.settingsLoaded = true;
-          console.log('📋 Ayarlar yüklendi - WPM:', this.wpm, 'excludeWords:', this.excludeWords ? `"${this.excludeWords}"` : '(boş)', 'PDF Method:', window.pdfCleanupSettings.extractionMethod, 'PDF Cleanup:', window.pdfCleanupSettings.enabled ? 'Açık' : 'Kapalı');
+          console.log('📋 Ayarlar yüklendi - WPM:', this.wpm, 'excludeWords:', this.excludeWords ? `"${this.excludeWords}"` : '(boş)', 'PDF Lib:', window.pdfCleanupSettings.library, 'PDF Method:', window.pdfCleanupSettings.extractionMethod, 'PDF Cleanup:', window.pdfCleanupSettings.enabled ? 'Açık' : 'Kapalı');
           this.setupUI(); // UI'yi ayarlarla birlikte kur
           resolve();
         });
@@ -1194,8 +1207,20 @@
             normalizeWhitespace: extractionMethod === 'enhanced'
           });
           
+          // Yapısal (structural) metod - Y pozisyonuna göre sırala
+          let items = textContent.items;
+          if (extractionMethod === 'structural') {
+            items = [...items].sort((a, b) => {
+              const yDiff = Math.abs(a.transform[5] - b.transform[5]);
+              if (yDiff < 5) { // Aynı satırda (5px tolerans)
+                return a.transform[4] - b.transform[4]; // X pozisyonuna göre sırala
+              }
+              return b.transform[5] - a.transform[5]; // Yukarıdan aşağıya
+            });
+          }
+          
           // Türkçe karakterleri düzgün çıkarmak için gelişmiş işleme
-          const pageText = textContent.items.map(item => {
+          const pageText = items.map(item => {
             let str = item.str || '';
             
             // Boş veya sadece whitespace içeren stringleri atla

@@ -6,17 +6,19 @@ const status = document.getElementById('status');
 
 // Ayarları yükle
 const showGainsCheckbox = document.getElementById('show-gains');
+const pdfLibrarySelect = document.getElementById('pdf-library');
 const pdfExtractionMethodSelect = document.getElementById('pdf-extraction-method');
 const enablePdfCleanupCheckbox = document.getElementById('enable-pdf-cleanup');
 const pdfCleanupRegexInput = document.getElementById('pdf-cleanup-regex');
 const pdfCleanupReplacementInput = document.getElementById('pdf-cleanup-replacement');
 
-chrome.storage.sync.get(['selectedFont', 'defaultWPM', 'excludeWords', 'showGains', 'pdfExtractionMethod', 'enablePdfCleanup', 'pdfCleanupRegex', 'pdfCleanupReplacement'], (res) => {
+chrome.storage.sync.get(['selectedFont', 'defaultWPM', 'excludeWords', 'showGains', 'pdfLibrary', 'pdfExtractionMethod', 'enablePdfCleanup', 'pdfCleanupRegex', 'pdfCleanupReplacement'], (res) => {
   console.log('Options loading settings:', res);
   fontSelect.value = res.selectedFont || 'georgia';
   wpmInput.value = res.defaultWPM || 250;
   excludeWordsInput.value = res.excludeWords || '';
   showGainsCheckbox.checked = res.showGains !== false; // Varsayılan: true
+  pdfLibrarySelect.value = res.pdfLibrary || 'pdfjs';
   pdfExtractionMethodSelect.value = res.pdfExtractionMethod || 'standard';
   enablePdfCleanupCheckbox.checked = res.enablePdfCleanup !== false; // Varsayılan: true
   pdfCleanupRegexInput.value = res.pdfCleanupRegex || '([a-zğüşıöç]+)\\s+([ğüşıöçĞÜŞİÖÇ])\\s+([a-zğüşıöç]+)';
@@ -31,6 +33,7 @@ document.getElementById('save').addEventListener('click', () => {
     defaultWPM: parseInt(wpmInput.value) || 250,
     excludeWords: excludeWordsInput.value.trim(),
     showGains: showGainsCheckbox.checked,
+    pdfLibrary: pdfLibrarySelect.value,
     pdfExtractionMethod: pdfExtractionMethodSelect.value,
     enablePdfCleanup: enablePdfCleanupCheckbox.checked,
     pdfCleanupRegex: pdfCleanupRegexInput.value.trim(),
@@ -76,9 +79,10 @@ excludeWordsInput.addEventListener('input', () => {
 
 // Test butonu - ayarları kontrol et
 document.getElementById('test-settings').addEventListener('click', () => {
-  chrome.storage.sync.get(['selectedFont', 'defaultWPM', 'excludeWords', 'showGains', 'pdfExtractionMethod', 'enablePdfCleanup', 'pdfCleanupRegex', 'pdfCleanupReplacement'], (res) => {
+  chrome.storage.sync.get(['selectedFont', 'defaultWPM', 'excludeWords', 'showGains', 'pdfLibrary', 'pdfExtractionMethod', 'enablePdfCleanup', 'pdfCleanupRegex', 'pdfCleanupReplacement'], (res) => {
     const excludeWordsDisplay = res.excludeWords && res.excludeWords.trim() ? res.excludeWords : 'Yok';
     const showGainsDisplay = res.showGains !== false ? 'Açık ✅' : 'Kapalı ❌';
+    const pdfLibDisplay = res.pdfLibrary || 'pdfjs';
     const pdfMethodDisplay = res.pdfExtractionMethod || 'standard';
     const pdfCleanupDisplay = res.enablePdfCleanup !== false ? 'Açık ✅' : 'Kapalı ❌';
     const regexDisplay = res.pdfCleanupRegex || 'Varsayılan';
@@ -88,7 +92,8 @@ document.getElementById('test-settings').addEventListener('click', () => {
       ⏱️ WPM: ${res.defaultWPM || 250}<br>
       🚫 Hariç Kelimeler: ${excludeWordsDisplay}<br>
       📈 Kazanım Göster: ${showGainsDisplay}<br>
-      📄 PDF Motoru: ${pdfMethodDisplay}<br>
+      📚 PDF Kütüphane: ${pdfLibDisplay}<br>
+      📄 PDF Modu: ${pdfMethodDisplay}<br>
       🔧 PDF Temizleme: ${pdfCleanupDisplay}<br>
       📝 Regex: ${regexDisplay}
     `;
