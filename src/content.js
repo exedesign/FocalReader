@@ -465,17 +465,22 @@
         const pageText = textContent.items.map(item => {
           let str = item.str || '';
           
-          // NFC normalizasyonu (Canonical Composition)
+          // NFC ve NFD normalizasyonu - birleşik karakterler için
           str = str.normalize('NFC');
           
-          // Yaygın PDF encoding hatalarını düzelt
+          // Yaygın PDF encoding hatalarını düzelt - GENİŞLETİLMİŞ
           const turkishCharMap = {
-            '\u0131': 'ı', '\u0130': 'İ',  // ı, İ
-            '\u015F': 'ş', '\u015E': 'Ş',  // ş, Ş
+            // Türkçe karakterler - birden fazla Unicode varyantı
+            '\u0131': 'ı', '\u0049': 'I', '\u0069': 'i', '\u0130': 'İ',  // ı, I, i, İ
+            '\u015F': 'ş', '\u015E': 'Ş',  // ş, Ş  
             '\u011F': 'ğ', '\u011E': 'Ğ',  // ğ, Ğ
             '\u00E7': 'ç', '\u00C7': 'Ç',  // ç, Ç
             '\u00FC': 'ü', '\u00DC': 'Ü',  // ü, Ü
             '\u00F6': 'ö', '\u00D6': 'Ö',  // ö, Ö
+            // Bozuk karakterler için alternatif eşlemeler
+            'Ä±': 'ı', 'Ä°': 'İ',  // Latin-1 encoding hataları
+            'ÅŸ': 'ş', 'Åž': 'Ş',
+            'Ä\u009F': 'ğ', 'Ä\u009E': 'Ğ',
           };
           
           // Karakter haritasını uygula
@@ -483,6 +488,10 @@
             const regex = new RegExp(key, 'g');
             str = str.replace(regex, turkishCharMap[key]);
           });
+          
+          // Latin büyük I'yı Türkçe İ'ye çevir (kelime başı kontrolü ile)
+          str = str.replace(/\bI([a-zğüşöçı])/g, 'İ$1');
+          str = str.replace(/([a-zğüşöçı])I\b/g, '$1i');
           
           return str;
         }).join(' ');
@@ -1128,17 +1137,22 @@
           const pageText = textContent.items.map(item => {
             let str = item.str || '';
             
-            // NFC normalizasyonu (Canonical Composition)
+            // NFC ve NFD normalizasyonu - birleşik karakterler için
             str = str.normalize('NFC');
             
-            // Yaygın PDF encoding hatalarını düzelt
+            // Yaygın PDF encoding hatalarını düzelt - GENİŞLETİLMİŞ
             const turkishCharMap = {
-              '\u0131': 'ı', '\u0130': 'İ',  // ı, İ
-              '\u015F': 'ş', '\u015E': 'Ş',  // ş, Ş
+              // Türkçe karakterler - birden fazla Unicode varyantı
+              '\u0131': 'ı', '\u0049': 'I', '\u0069': 'i', '\u0130': 'İ',  // ı, I, i, İ
+              '\u015F': 'ş', '\u015E': 'Ş',  // ş, Ş  
               '\u011F': 'ğ', '\u011E': 'Ğ',  // ğ, Ğ
               '\u00E7': 'ç', '\u00C7': 'Ç',  // ç, Ç
               '\u00FC': 'ü', '\u00DC': 'Ü',  // ü, Ü
               '\u00F6': 'ö', '\u00D6': 'Ö',  // ö, Ö
+              // Bozuk karakterler için alternatif eşlemeler
+              'Ä±': 'ı', 'Ä°': 'İ',  // Latin-1 encoding hataları
+              'ÅŸ': 'ş', 'Åž': 'Ş',
+              'Ä\u009F': 'ğ', 'Ä\u009E': 'Ğ',
             };
             
             // Karakter haritasını uygula
@@ -1146,6 +1160,10 @@
               const regex = new RegExp(key, 'g');
               str = str.replace(regex, turkishCharMap[key]);
             });
+            
+            // Latin büyük I'yı Türkçe İ'ye çevir (kelime başı kontrolü ile)
+            str = str.replace(/\bI([a-zğüşöçı])/g, 'İ$1');
+            str = str.replace(/([a-zğüşöçı])I\b/g, '$1i');
             
             return str;
           }).join(' ');
