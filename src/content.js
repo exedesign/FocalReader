@@ -517,10 +517,17 @@
         // Satır sonu tire birleştirme
         let cleanedText = pageText.replace(/(\w+)-\s+(\w+)/g, '$1$2');
         
-        // Türkçe karakterlerin etrafındaki boşlukları temizle
-        // "u ş ak" -> "uşak", "aya ğ a" -> "ayağa"
-        // Harf + boşluk + TEK Türkçe karakter + boşluk + harf
-        cleanedText = cleanedText.replace(/([a-zğüşıöç]+)\s+([ğüşıöçĞÜŞİÖÇ])\s+([a-zğüşıöç]+)/gi, '$1$2$3');
+        // PDF temizleme ayarlarını uygula (eğer aktifse)
+        if (window.pdfCleanupSettings && window.pdfCleanupSettings.enabled && window.pdfCleanupSettings.regex) {
+          try {
+            const regex = new RegExp(window.pdfCleanupSettings.regex, 'gi');
+            const replacement = window.pdfCleanupSettings.replacement || '$1$2$3';
+            cleanedText = cleanedText.replace(regex, replacement);
+            console.log('PDF cleanup applied:', window.pdfCleanupSettings.regex);
+          } catch (e) {
+            console.warn('PDF cleanup regex error:', e);
+          }
+        }
         
         fullText += cleanedText + ' ';
       }      console.log('Text extraction completed, total length:', fullText.length);
@@ -814,13 +821,21 @@
     // Kullanıcı ayarlarını yükle
     async loadSettings(){
       return new Promise((resolve) => {
-        chrome.storage.sync.get(['defaultWPM', 'selectedFont', 'excludeWords', 'showGains'], (res) => {
+        chrome.storage.sync.get(['defaultWPM', 'selectedFont', 'excludeWords', 'showGains', 'enablePdfCleanup', 'pdfCleanupRegex', 'pdfCleanupReplacement'], (res) => {
           this.wpm = res.defaultWPM || 250;
           this.selectedFont = res.selectedFont || 'georgia';
           this.excludeWords = res.excludeWords || '';
           this.showGains = res.showGains !== false; // Varsayılan: true
+          
+          // PDF temizleme ayarlarını global değişkene kaydet
+          window.pdfCleanupSettings = {
+            enabled: res.enablePdfCleanup !== false, // Varsayılan: true
+            regex: res.pdfCleanupRegex || '([a-zğüşıöç]+)\\s+([ğüşıöçĞÜŞİÖÇ])\\s+([a-zğüşıöç]+)',
+            replacement: res.pdfCleanupReplacement || '$1$2$3'
+          };
+          
           this.settingsLoaded = true;
-          console.log('📋 Ayarlar yüklendi - WPM:', this.wpm, 'excludeWords:', this.excludeWords ? `"${this.excludeWords}"` : '(boş)');
+          console.log('📋 Ayarlar yüklendi - WPM:', this.wpm, 'excludeWords:', this.excludeWords ? `"${this.excludeWords}"` : '(boş)', 'PDF Cleanup:', window.pdfCleanupSettings.enabled ? 'Açık' : 'Kapalı');
           this.setupUI(); // UI'yi ayarlarla birlikte kur
           resolve();
         });
@@ -1219,10 +1234,16 @@
           // Satır sonu tire birleştirme
           let cleanedText = pageText.replace(/(\w+)-\s+(\w+)/g, '$1$2');
           
-          // Türkçe karakterlerin etrafındaki boşlukları temizle
-          // "u ş ak" -> "uşak", "aya ğ a" -> "ayağa"
-          // Harf + boşluk + TEK Türkçe karakter + boşluk + harf
-          cleanedText = cleanedText.replace(/([a-zğüşıöç]+)\s+([ğüşıöçĞÜŞİÖÇ])\s+([a-zğüşıöç]+)/gi, '$1$2$3');
+          // PDF temizleme ayarlarını uygula (eğer aktifse)
+          if (window.pdfCleanupSettings && window.pdfCleanupSettings.enabled && window.pdfCleanupSettings.regex) {
+            try {
+              const regex = new RegExp(window.pdfCleanupSettings.regex, 'gi');
+              const replacement = window.pdfCleanupSettings.replacement || '$1$2$3';
+              cleanedText = cleanedText.replace(regex, replacement);
+            } catch (e) {
+              console.warn('PDF cleanup regex error:', e);
+            }
+          }
           
           console.log(`   ✅ Sayfa ${i} - ${cleanedText.length} karakter`);
           fullText += cleanedText + ' ';

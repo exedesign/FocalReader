@@ -6,13 +6,19 @@ const status = document.getElementById('status');
 
 // Ayarları yükle
 const showGainsCheckbox = document.getElementById('show-gains');
+const enablePdfCleanupCheckbox = document.getElementById('enable-pdf-cleanup');
+const pdfCleanupRegexInput = document.getElementById('pdf-cleanup-regex');
+const pdfCleanupReplacementInput = document.getElementById('pdf-cleanup-replacement');
 
-chrome.storage.sync.get(['selectedFont', 'defaultWPM', 'excludeWords', 'showGains'], (res) => {
+chrome.storage.sync.get(['selectedFont', 'defaultWPM', 'excludeWords', 'showGains', 'enablePdfCleanup', 'pdfCleanupRegex', 'pdfCleanupReplacement'], (res) => {
   console.log('Options loading settings:', res);
   fontSelect.value = res.selectedFont || 'georgia';
   wpmInput.value = res.defaultWPM || 250;
   excludeWordsInput.value = res.excludeWords || '';
   showGainsCheckbox.checked = res.showGains !== false; // Varsayılan: true
+  enablePdfCleanupCheckbox.checked = res.enablePdfCleanup !== false; // Varsayılan: true
+  pdfCleanupRegexInput.value = res.pdfCleanupRegex || '([a-zğüşıöç]+)\\s+([ğüşıöçĞÜŞİÖÇ])\\s+([a-zğüşıöç]+)';
+  pdfCleanupReplacementInput.value = res.pdfCleanupReplacement || '$1$2$3';
   console.log('Settings loaded successfully');
 });
 
@@ -22,7 +28,10 @@ document.getElementById('save').addEventListener('click', () => {
     selectedFont: fontSelect.value,
     defaultWPM: parseInt(wpmInput.value) || 250,
     excludeWords: excludeWordsInput.value.trim(),
-    showGains: showGainsCheckbox.checked
+    showGains: showGainsCheckbox.checked,
+    enablePdfCleanup: enablePdfCleanupCheckbox.checked,
+    pdfCleanupRegex: pdfCleanupRegexInput.value.trim(),
+    pdfCleanupReplacement: pdfCleanupReplacementInput.value.trim()
   };
   
   console.log('Saving settings:', settings);
@@ -64,15 +73,19 @@ excludeWordsInput.addEventListener('input', () => {
 
 // Test butonu - ayarları kontrol et
 document.getElementById('test-settings').addEventListener('click', () => {
-  chrome.storage.sync.get(['selectedFont', 'defaultWPM', 'excludeWords', 'showGains'], (res) => {
+  chrome.storage.sync.get(['selectedFont', 'defaultWPM', 'excludeWords', 'showGains', 'enablePdfCleanup', 'pdfCleanupRegex', 'pdfCleanupReplacement'], (res) => {
     const excludeWordsDisplay = res.excludeWords && res.excludeWords.trim() ? res.excludeWords : 'Yok';
     const showGainsDisplay = res.showGains !== false ? 'Açık ✅' : 'Kapalı ❌';
+    const pdfCleanupDisplay = res.enablePdfCleanup !== false ? 'Açık ✅' : 'Kapalı ❌';
+    const regexDisplay = res.pdfCleanupRegex || 'Varsayılan';
     status.innerHTML = `
       <strong>📊 Mevcut Ayarlar:</strong><br>
       🅰️ Font: ${res.selectedFont || 'georgia'}<br>
       ⏱️ WPM: ${res.defaultWPM || 250}<br>
       🚫 Hariç Kelimeler: ${excludeWordsDisplay}<br>
-      📈 Kazanım Göster: ${showGainsDisplay}
+      📈 Kazanım Göster: ${showGainsDisplay}<br>
+      🔧 PDF Temizleme: ${pdfCleanupDisplay}<br>
+      📝 Regex: ${regexDisplay}
     `;
     status.style.color = '#17a2b8';
     status.style.borderLeftColor = '#17a2b8';
