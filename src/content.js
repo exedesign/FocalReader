@@ -48,11 +48,11 @@
         .spritz-pivot{color:#ffdd44;font-weight:700;}
         .spritz-right{color:#888;}
         #spritz-progress-container{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);width:450px;text-align:center;z-index:999999;pointer-events:auto;}
-        #spritz-progress-bar{width:100%;height:8px;background:#333;border-radius:4px;cursor:pointer;position:relative;overflow:hidden;margin-bottom:0;pointer-events:auto;}
+        #spritz-progress-bar{width:100%;height:8px;background:#333;border-radius:4px;cursor:pointer;position:relative;overflow:hidden;margin-bottom:8px;pointer-events:auto;}
         #spritz-progress-fill{height:100%;background:#1e90ff;border-radius:4px;width:0%;transition:width 0.3s ease-out;pointer-events:none;position:relative;}
         .pdf-page-marker{position:absolute;top:0;width:1px;height:100%;background:#555;opacity:0.3;pointer-events:none;z-index:1;}
         .pdf-page-number{position:absolute;top:-20px;transform:translateX(-50%);font-size:9px;color:#666;font-weight:400;pointer-events:none;white-space:nowrap;display:none;}
-        #spritz-progress-text{position:absolute;top:-25px;left:50%;transform:translateX(-50%);color:#fff;font-size:14px;font-weight:600;white-space:nowrap;}
+        #spritz-progress-text{color:#fff;font-size:14px;font-weight:400;text-align:center;}
         #spritz-controls{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);text-align:center;padding:15px 25px;background:rgba(0,0,0,0.8);border-radius:8px;border:none;z-index:999999;pointer-events:auto;}
         #spritz-controls button{margin:0 8px;padding:8px 12px;background:#222;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;}
         #spritz-controls button:hover{background:#444;}
