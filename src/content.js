@@ -517,12 +517,10 @@
         // Satır sonu tire birleştirme
         let cleanedText = pageText.replace(/(\w+)-\s+(\w+)/g, '$1$2');
         
-        // Sadece 3+ karakterli kelimelerin ortasındaki TEKLİ boşlukları temizle
-        // "u ş ak" -> "uşak", "ya ş lı" -> "yaşlı", "kar ş ısındaki" -> "karşısındaki"
-        // Ama "kapıyı açtı" kelime aralarını koru
-        
-        // 2+ harf + TEK boşluk + TEK harf + TEK boşluk + 2+ harf (bariz kelime içi hata)
-        cleanedText = cleanedText.replace(/([a-zğüşıöç]{2,})\s([a-zğüşıöçĞÜŞİÖÇ])\s([a-zğüşıöç]{2,})/gi, '$1$2$3');
+        // Türkçe karakterlerin etrafındaki boşlukları temizle
+        // "u ş ak" -> "uşak", "aya ğ a" -> "ayağa"
+        // Harf + boşluk + TEK Türkçe karakter + boşluk + harf
+        cleanedText = cleanedText.replace(/([a-zğüşıöç]+)\s+([ğüşıöçĞÜŞİÖÇ])\s+([a-zğüşıöç]+)/gi, '$1$2$3');
         
         fullText += cleanedText + ' ';
       }      console.log('Text extraction completed, total length:', fullText.length);
@@ -1221,12 +1219,10 @@
           // Satır sonu tire birleştirme
           let cleanedText = pageText.replace(/(\w+)-\s+(\w+)/g, '$1$2');
           
-          // Sadece 3+ karakterli kelimelerin ortasındaki TEKLİ boşlukları temizle
-          // "u ş ak" -> "uşak", "ya ş lı" -> "yaşlı", "kar ş ısındaki" -> "karşısındaki"
-          // Ama "kapıyı açtı" kelime aralarını koru
-          
-          // 2+ harf + TEK boşluk + TEK harf + TEK boşluk + 2+ harf (bariz kelime içi hata)
-          cleanedText = cleanedText.replace(/([a-zğüşıöç]{2,})\s([a-zğüşıöçĞÜŞİÖÇ])\s([a-zğüşıöç]{2,})/gi, '$1$2$3');
+          // Türkçe karakterlerin etrafındaki boşlukları temizle
+          // "u ş ak" -> "uşak", "aya ğ a" -> "ayağa"
+          // Harf + boşluk + TEK Türkçe karakter + boşluk + harf
+          cleanedText = cleanedText.replace(/([a-zğüşıöç]+)\s+([ğüşıöçĞÜŞİÖÇ])\s+([a-zğüşıöç]+)/gi, '$1$2$3');
           
           console.log(`   ✅ Sayfa ${i} - ${cleanedText.length} karakter`);
           fullText += cleanedText + ' ';
