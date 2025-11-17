@@ -767,7 +767,6 @@
       this.wpm = 250; // Varsayılan, ayarlardan yüklenir
       this.selectedFont = 'georgia'; // Varsayılan font
       this.excludeWords = ''; // Hariç tutulacak kelimeler
-      this.cleanPDFText = true; // PDF metin temizleme (varsayılan: açık)
       this.speedMultiplier = 1; // Hız çarpanı
       this.interval = null;
       this.words = [];
@@ -789,14 +788,13 @@
     // Kullanıcı ayarlarını yükle
     async loadSettings(){
       return new Promise((resolve) => {
-        chrome.storage.sync.get(['defaultWPM', 'selectedFont', 'excludeWords', 'cleanPDFText', 'showGains'], (res) => {
+        chrome.storage.sync.get(['defaultWPM', 'selectedFont', 'excludeWords', 'showGains'], (res) => {
           this.wpm = res.defaultWPM || 250;
           this.selectedFont = res.selectedFont || 'georgia';
           this.excludeWords = res.excludeWords || '';
-          this.cleanPDFText = res.cleanPDFText !== false; // Varsayılan: true
           this.showGains = res.showGains !== false; // Varsayılan: true
           this.settingsLoaded = true;
-          console.log('📋 Ayarlar yüklendi - WPM:', this.wpm, 'cleanPDFText:', this.cleanPDFText, 'excludeWords:', this.excludeWords ? `"${this.excludeWords}"` : '(boş)');
+          console.log('📋 Ayarlar yüklendi - WPM:', this.wpm, 'excludeWords:', this.excludeWords ? `"${this.excludeWords}"` : '(boş)');
           this.setupUI(); // UI'yi ayarlarla birlikte kur
           resolve();
         });
@@ -1195,14 +1193,10 @@
         if (fullText && fullText.trim().length > 10) {
           await this.sleep(400);
           console.log('🎯 Metin ayarlanıyor ve oynatma başlatılıyor...');
-          console.log('📝 İlk 100 karakter (ham):', fullText.trim().substring(0, 100));
-          
-          // PDF metni temizle (eğer ayar açıksa)
-          const cleanedText = this.cleanPDFTextContent(fullText.trim());
-          console.log('📝 İlk 100 karakter (temiz):', cleanedText.substring(0, 100));
+          console.log('📝 İlk 100 karakter:', fullText.trim().substring(0, 100));
           
           // Orijinal metni sakla
-          this.originalText = cleanedText;
+          this.originalText = fullText.trim();
           
           this.updateLoadingProgress(87, '✓ Metin çıkarma tamamlandı');
           this.showLoadingStatus(
@@ -1228,7 +1222,7 @@
           
           // PDF sayfa sınırlarını kelime indexlerine çevir
           console.log('📊 PDF sayfa sınırları hesaplanıyor...');
-          this.pdfPageBoundaries = this.calculatePageBoundaries(pageBoundaries, fullText.trim(), cleanedText);
+          this.pdfPageBoundaries = this.calculatePageBoundaries(pageBoundaries, fullText.trim(), this.originalText);
           console.log('✅ Sayfa sınırları:', this.pdfPageBoundaries);
           
           // İlerleme çubuğuna sayfa markerlarını ekle
@@ -1317,66 +1311,7 @@
       }
     }
     
-    cleanPDFTextContent(text) {
-      if (!this.cleanPDFText) {
-        console.log('🔧 PDF temizleme kapalı, orijinal metin kullanılıyor');
-        return text;
-      }
-      
-      console.log('🧹 PDF metni temizleniyor...');
-      console.log('   Orijinal uzunluk:', text.length);
-      
-      let cleaned = text;
-      
-      // 1. Satır sonu tire birleştirmeleri (Türkçe kelimeler için)
-      // "ke- lime" -> "kelime"
-      cleaned = cleaned.replace(/(\w+)-\s+(\w+)/g, '$1$2');
-      console.log('   ✓ Tire birleştirme yapıldı');
-      
-      // 2. Fazla boşlukları temizle (2+ boşluk -> 1 boşluk)
-      cleaned = cleaned.replace(/\s{2,}/g, ' ');
-      console.log('   ✓ Fazla boşluklar temizlendi');
-      
-      // 3. Kelime içi boşlukları düzelt (örn: "k e l i m e" -> "kelime")
-      // Türkçe karakterler dahil: a-zğüşıöçA-ZĞÜŞİÖÇ
-      cleaned = cleaned.replace(/\b([a-zğüşıöçA-ZĞÜŞİÖÇ])\s+([a-zğüşıöçA-ZĞÜŞİÖÇ])\b/g, (match, char1, char2) => {
-        // Sadece tek harf + tek harf durumlarını birleştir
-        return char1 + char2;
-      });
-      console.log('   ✓ Kelime içi boşluklar düzeltildi');
-      
-      // 4. Tek başına kalmış harfleri temizle (opsiyonel - dikkatli kullan)
-      // Cümle başı ve sonu hariç tek harfleri temizle
-      cleaned = cleaned.replace(/\s+([a-zğüşıöçA-ZĞÜŞİÖÇ])\s+/g, ' ');
-      console.log('   ✓ Tek başına harfler temizlendi');
-      
-      // 5. Noktalama işaretleri öncesi fazla boşlukları temizle
-      cleaned = cleaned.replace(/\s+([.,!?;:])/g, '$1');
-      console.log('   ✓ Noktalama boşlukları düzeltildi');
-      
-      // 6. Cümle başı boşlukları ve trim
-      cleaned = cleaned.trim();
-      cleaned = cleaned.replace(/([.!?])\s+/g, '$1 '); // Cümle sonrası tek boşluk
-      console.log('   ✓ Cümle boşlukları normalize edildi');
-      
-      // 7. Türkçe karakter düzeltmeleri (yaygın PDF sorunları)
-      const turkishFixes = {
-        'Ä±': 'ı', 'Ä°': 'İ', 'Å\u009f': 'ş', 'Åž': 'Ş',
-        'Ã§': 'ç', 'Ã\u0087': 'Ç', 'Ã¼': 'ü', 'Ãœ': 'Ü',
-        'Ã¶': 'ö', 'Ã\u0096': 'Ö', 'ÄŸ': 'ğ', 'Äž': 'Ğ'
-      };
-      
-      Object.keys(turkishFixes).forEach(wrong => {
-        const regex = new RegExp(wrong, 'g');
-        cleaned = cleaned.replace(regex, turkishFixes[wrong]);
-      });
-      console.log('   ✓ Türkçe karakter düzeltmeleri yapıldı');
-      
-      console.log('   Temizlenmiş uzunluk:', cleaned.length);
-      console.log('   Kazanılan:', (text.length - cleaned.length), 'karakter');
-      
-      return cleaned;
-    }
+    // cleanPDFTextContent fonksiyonu kaldırıldı
     
     filterSentences(sentences) {
       console.log('🔍 filterSentences çağrıldı');

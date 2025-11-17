@@ -5,15 +5,13 @@ const excludeWordsInput = document.getElementById('exclude-words');
 const status = document.getElementById('status');
 
 // Ayarları yükle
-const cleanPDFTextCheckbox = document.getElementById('clean-pdf-text');
 const showGainsCheckbox = document.getElementById('show-gains');
 
-chrome.storage.sync.get(['selectedFont', 'defaultWPM', 'excludeWords', 'cleanPDFText', 'showGains'], (res) => {
+chrome.storage.sync.get(['selectedFont', 'defaultWPM', 'excludeWords', 'showGains'], (res) => {
   console.log('Options loading settings:', res);
   fontSelect.value = res.selectedFont || 'georgia';
   wpmInput.value = res.defaultWPM || 250;
   excludeWordsInput.value = res.excludeWords || '';
-  cleanPDFTextCheckbox.checked = res.cleanPDFText !== false; // Varsayılan: true
   showGainsCheckbox.checked = res.showGains !== false; // Varsayılan: true
   console.log('Settings loaded successfully');
 });
@@ -24,7 +22,6 @@ document.getElementById('save').addEventListener('click', () => {
     selectedFont: fontSelect.value,
     defaultWPM: parseInt(wpmInput.value) || 250,
     excludeWords: excludeWordsInput.value.trim(),
-    cleanPDFText: cleanPDFTextCheckbox.checked,
     showGains: showGainsCheckbox.checked
   };
   
@@ -67,16 +64,14 @@ excludeWordsInput.addEventListener('input', () => {
 
 // Test butonu - ayarları kontrol et
 document.getElementById('test-settings').addEventListener('click', () => {
-  chrome.storage.sync.get(['selectedFont', 'defaultWPM', 'excludeWords', 'cleanPDFText', 'showGains'], (res) => {
+  chrome.storage.sync.get(['selectedFont', 'defaultWPM', 'excludeWords', 'showGains'], (res) => {
     const excludeWordsDisplay = res.excludeWords && res.excludeWords.trim() ? res.excludeWords : 'Yok';
-    const cleanPDFDisplay = res.cleanPDFText !== false ? 'Açık ✅' : 'Kapalı ❌';
     const showGainsDisplay = res.showGains !== false ? 'Açık ✅' : 'Kapalı ❌';
     status.innerHTML = `
       <strong>📊 Mevcut Ayarlar:</strong><br>
       🅰️ Font: ${res.selectedFont || 'georgia'}<br>
       ⏱️ WPM: ${res.defaultWPM || 250}<br>
       🚫 Hariç Kelimeler: ${excludeWordsDisplay}<br>
-      🧹 PDF Temizleme: ${cleanPDFDisplay}<br>
       📈 Kazanım Göster: ${showGainsDisplay}
     `;
     status.style.color = '#17a2b8';
