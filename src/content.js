@@ -517,20 +517,10 @@
         // Satır sonu tire birleştirme
         let cleanedText = pageText.replace(/(\w+)-\s+(\w+)/g, '$1$2');
         
-        // Türkçe karakterlerin etrafındaki tüm boşlukları temizle
-        // "u ş ak" -> "uşak", "ya ş lı" -> "yaşlı", "do ğ ru" -> "doğru", "aya ğ a" -> "ayağa"
-        const turkishChars = '[\u011f\u011e\u00fc\u00dc\u015f\u015e\u0131\u0130\u00f6\u00d6\u00e7\u00c7ğĞüÜşŞıİöÖçÇ]';
-        const letter = '[a-zA-ZğĞüÜşŞıİöÖçÇ]';
-        
-        // Harf + boşluk + Türkçe karakter birleştirme (tekrarlı)
-        while (cleanedText.match(new RegExp(`(${letter})\\s+(${turkishChars})`, 'g'))) {
-          cleanedText = cleanedText.replace(new RegExp(`(${letter})\\s+(${turkishChars})`, 'g'), '$1$2');
-        }
-        
-        // Türkçe karakter + boşluk + harf birleştirme (tekrarlı)
-        while (cleanedText.match(new RegExp(`(${turkishChars})\\s+(${letter})`, 'g'))) {
-          cleanedText = cleanedText.replace(new RegExp(`(${turkishChars})\\s+(${letter})`, 'g'), '$1$2');
-        }
+        // Türkçe karakterlerin önündeki ve arkasındaki boşlukları temizle
+        // "u ş ak" -> "uşak", "ya ş lı" -> "yaşlı", "aya ğ a" -> "ayağa"
+        cleanedText = cleanedText.replace(/\s+([ğĞüÜşŞıİöÖçÇ])/g, '$1');
+        cleanedText = cleanedText.replace(/([ğĞüÜşŞıİöÖçÇ])\s+/g, '$1');
         
         fullText += cleanedText + ' ';
       }      console.log('Text extraction completed, total length:', fullText.length);
@@ -1229,19 +1219,10 @@
           // Satır sonu tire birleştirme
           let cleanedText = pageText.replace(/(\w+)-\s+(\w+)/g, '$1$2');
           
-          // Türkçe karakterlerin etrafındaki tüm boşlukları temizle
-          const turkishChars = '[\u011f\u011e\u00fc\u00dc\u015f\u015e\u0131\u0130\u00f6\u00d6\u00e7\u00c7ğĞüÜşŞıİöÖçÇ]';
-          const letter = '[a-zA-ZğĞüÜşŞıİöÖçÇ]';
-          
-          // Harf + boşluk + Türkçe karakter birleştirme (tekrarlı)
-          while (cleanedText.match(new RegExp(`(${letter})\\s+(${turkishChars})`, 'g'))) {
-            cleanedText = cleanedText.replace(new RegExp(`(${letter})\\s+(${turkishChars})`, 'g'), '$1$2');
-          }
-          
-          // Türkçe karakter + boşluk + harf birleştirme (tekrarlı)
-          while (cleanedText.match(new RegExp(`(${turkishChars})\\s+(${letter})`, 'g'))) {
-            cleanedText = cleanedText.replace(new RegExp(`(${turkishChars})\\s+(${letter})`, 'g'), '$1$2');
-          }
+          // Türkçe karakterlerin önündeki ve arkasındaki boşlukları temizle
+          // "u ş ak" -> "uşak", "ya ş lı" -> "yaşlı", "aya ğ a" -> "ayağa"
+          cleanedText = cleanedText.replace(/\s+([ğĞüÜşŞıİöÖçÇ])/g, '$1');
+          cleanedText = cleanedText.replace(/([ğĞüÜşŞıİöÖçÇ])\s+/g, '$1');
           
           console.log(`   ✅ Sayfa ${i} - ${cleanedText.length} karakter`);
           fullText += cleanedText + ' ';
