@@ -515,7 +515,15 @@
         }).filter(s => s.length > 0).join(' ');
         
         // Satır sonu tire birleştirme
-        fullText += pageText.replace(/(\w+)-\s+(\w+)/g, '$1$2') + ' ';
+        let cleanedText = pageText.replace(/(\w+)-\s+(\w+)/g, '$1$2');
+        
+        // Türkçe karakterlerin önündeki ve arkasındaki gereksiz boşlukları temizle
+        // "örnek: "u \u015f ak" -> "uşak", "ya \u015f lı" -> "yaşlı"
+        cleanedText = cleanedText.replace(/([a-zA-Z])\s+([\u011f\u011e\u00fc\u00dc\u015f\u015e\u0131\u0130\u00f6\u00d6\u00e7\u00c7])\s+/g, '$1$2 ');
+        cleanedText = cleanedText.replace(/([a-zA-Z])\s+([\u011f\u011e\u00fc\u00dc\u015f\u015e\u0131\u0130\u00f6\u00d6\u00e7\u00c7])([a-zA-Z])/g, '$1$2$3');
+        cleanedText = cleanedText.replace(/\s+([\u011f\u011e\u00fc\u00dc\u015f\u015e\u0131\u0130\u00f6\u00d6\u00e7\u00c7])\s+/g, '$1 ');
+        
+        fullText += cleanedText + ' ';
       }      console.log('Text extraction completed, total length:', fullText.length);
       return fullText.trim();
       
@@ -1209,14 +1217,21 @@
             return str;
           }).filter(s => s.length > 0).join(' ');
           
-          console.log(`   ✅ Sayfa ${i} - ${pageText.length} karakter`);
           // Satır sonu tire birleştirme
-          fullText += pageText.replace(/(\w+)-\s+(\w+)/g, '$1$2') + ' ';
+          let cleanedText = pageText.replace(/(\w+)-\s+(\w+)/g, '$1$2');
+          
+          // Türkçe karakterlerin önündeki ve arkasındaki gereksiz boşlukları temizle
+          cleanedText = cleanedText.replace(/([a-zA-Z])\s+([\u011f\u011e\u00fc\u00dc\u015f\u015e\u0131\u0130\u00f6\u00d6\u00e7\u00c7])\s+/g, '$1$2 ');
+          cleanedText = cleanedText.replace(/([a-zA-Z])\s+([\u011f\u011e\u00fc\u00dc\u015f\u015e\u0131\u0130\u00f6\u00d6\u00e7\u00c7])([a-zA-Z])/g, '$1$2$3');
+          cleanedText = cleanedText.replace(/\s+([\u011f\u011e\u00fc\u00dc\u015f\u015e\u0131\u0130\u00f6\u00d6\u00e7\u00c7])\s+/g, '$1 ');
+          
+          console.log(`   ✅ Sayfa ${i} - ${cleanedText.length} karakter`);
+          fullText += cleanedText + ' ';
           
           // Progress güncelle
           const progress = 60 + (i / pdf.numPages) * 25; // 60-85 arası
           const percentText = `${((i / pdf.numPages) * 100).toFixed(0)}% tamamlandı`;
-          this.updateLoadingProgress(progress, `✓ Sayfa ${i}/${pdf.numPages} - ${pageText.length} karakter`);
+          this.updateLoadingProgress(progress, `✓ Sayfa ${i}/${pdf.numPages} - ${cleanedText.length} karakter`);
           this.showLoadingStatus(
             `📄 Adım 5/7: Sayfa ${i}/${pdf.numPages} işleniyor...`, 
             `${fullText.length.toLocaleString()} karakter çıkarıldı (${percentText})`
