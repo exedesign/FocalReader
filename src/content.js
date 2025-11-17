@@ -456,37 +456,13 @@
       
       let fullText = '';
       
-      // OCR etkinse Tesseract'ı yükle
-      if (window.pdfCleanupSettings?.ocrEnabled) {
-        console.log('🔍 OCR enabled, loading Tesseract.js...');
-        try {
-          await loadTesseract();
-        } catch (error) {
-          console.warn('⚠️ Tesseract loading failed, OCR disabled:', error);
-        }
-      }
-      
-        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
         console.log(`Processing page ${pageNum}/${pdf.numPages}`);
         const page = await pdf.getPage(pageNum);
         const textContent = await page.getTextContent();
         
-        // Metin az veya yoksa OCR kullan
-        let pageText = '';
-        const extractedTextLength = textContent.items.reduce((sum, item) => sum + (item.str || '').trim().length, 0);
-        
-        if (window.pdfCleanupSettings?.ocrEnabled && extractedTextLength < 50) {
-          console.log('⚠️ Low text content, trying OCR...');
-          const ocrText = await extractTextWithOCR(page);
-          if (ocrText && ocrText.length > extractedTextLength) {
-            console.log('✅ OCR successful, using OCR text');
-            pageText = ocrText;
-          }
-        }
-        
-        // Normal metin çıkarma (OCR kullanılmadıysa)
-        if (!pageText) {
-          pageText = textContent.items.map(item => {
+        // Normal metin çıkarma
+        const pageText = textContent.items.map(item => {
           let str = item.str || '';
           
           // Boş veya sadece whitespace içeren stringleri atla
@@ -672,67 +648,6 @@
       
       checkLibrary();
     });
-  }
-
-  // Tesseract.js yükleme fonksiyonu
-  async function loadTesseract() {
-    if (window.Tesseract) {
-      console.log('✅ Tesseract.js already loaded');
-      return;
-    }
-    
-    console.log('📚 Loading Tesseract.js...');
-    return new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js';
-      script.onload = () => {
-        console.log('✅ Tesseract.js loaded successfully');
-        resolve();
-      };
-      script.onerror = () => {
-        console.error('❌ Failed to load Tesseract.js');
-        reject(new Error('Tesseract.js yüklenemedi'));
-      };
-      document.head.appendChild(script);
-    });
-  }
-
-  // OCR ile PDF sayfasından metin çıkar
-  async function extractTextWithOCR(page) {
-    try {
-      console.log('🔍 Starting OCR extraction...');
-      
-      // Sayfa viewport ayarla
-      const viewport = page.getViewport({ scale: 2.0 }); // Yüksek çözünürlük
-      
-      // Canvas oluştur
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
-      
-      // Sayfayı canvas'a render et
-      await page.render({
-        canvasContext: context,
-        viewport: viewport
-      }).promise;
-      
-      // Tesseract ile OCR yap
-      const { data: { text } } = await Tesseract.recognize(
-        canvas,
-        'tur', // Türkçe dil
-        {
-          logger: m => console.log('OCR progress:', m)
-        }
-      );
-      
-      console.log('✅ OCR completed, text length:', text.length);
-      return text;
-      
-    } catch (error) {
-      console.error('❌ OCR error:', error);
-      return '';
-    }
   }
 
   // 1. Yöntem: Türkçe karakter düzeltme (OCR hataları için)
@@ -1019,7 +934,7 @@
     // Kullanıcı ayarlarını yükle
     async loadSettings(){
       return new Promise((resolve) => {
-        chrome.storage.sync.get(['defaultWPM', 'selectedFont', 'excludeWords', 'showGains', 'enablePdfCleanup', 'enableOcr', 'pdfProcessingMethods'], (res) => {
+        chrome.storage.sync.get(['defaultWPM', 'selectedFont', 'excludeWords', 'showGains', 'enablePdfCleanup', 'pdfProcessingMethods'], (res) => {
           this.wpm = res.defaultWPM || 250;
           this.selectedFont = res.selectedFont || 'georgia';
           this.excludeWords = res.excludeWords || '';
@@ -1028,12 +943,11 @@
           // PDF temizleme ayarlarını global değişkene kaydet
           window.pdfCleanupSettings = {
             enabled: res.enablePdfCleanup !== false, // Varsayılan: true
-            ocrEnabled: res.enableOcr === true, // Varsayılan: false
             processingMethods: res.pdfProcessingMethods || [] // Varsayılan: boş array
           };
           
           this.settingsLoaded = true;
-          console.log('📋 Ayarlar yüklendi - WPM:', this.wpm, 'excludeWords:', this.excludeWords ? `"${this.excludeWords}"` : '(boş)', 'PDF Cleanup:', window.pdfCleanupSettings.enabled ? 'Açık' : 'Kapalı', 'OCR:', window.pdfCleanupSettings.ocrEnabled ? 'Açık' : 'Kapalı', 'Processing Methods:', window.pdfCleanupSettings.processingMethods.join(', ') || 'Yok');
+          console.log('📋 Ayarlar yüklendi - WPM:', this.wpm, 'excludeWords:', this.excludeWords ? `"${this.excludeWords}"` : '(boş)', 'PDF Cleanup:', window.pdfCleanupSettings.enabled ? 'Açık' : 'Kapalı', 'Processing Methods:', window.pdfCleanupSettings.processingMethods.join(', ') || 'Yok');
           this.setupUI(); // UI'yi ayarlarla birlikte kur
           resolve();
         });

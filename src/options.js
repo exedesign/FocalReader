@@ -7,21 +7,19 @@ const status = document.getElementById('status');
 // Ayarları yükle
 const showGainsCheckbox = document.getElementById('show-gains');
 const enablePdfCleanupCheckbox = document.getElementById('enable-pdf-cleanup');
-const enableOcrCheckbox = document.getElementById('enable-ocr');
 
 // PDF metin işleme yöntemi checkbox'ları
 const pdfMethodCharacterFix = document.getElementById('pdf-method-character-fix');
 const pdfMethodNormalize = document.getElementById('pdf-method-normalize');
 const pdfMethodDialogue = document.getElementById('pdf-method-dialogue');
 
-chrome.storage.sync.get(['selectedFont', 'defaultWPM', 'excludeWords', 'showGains', 'enablePdfCleanup', 'enableOcr', 'pdfProcessingMethods'], (res) => {
+chrome.storage.sync.get(['selectedFont', 'defaultWPM', 'excludeWords', 'showGains', 'enablePdfCleanup', 'pdfProcessingMethods'], (res) => {
   console.log('Options loading settings:', res);
   fontSelect.value = res.selectedFont || 'georgia';
   wpmInput.value = res.defaultWPM || 250;
   excludeWordsInput.value = res.excludeWords || '';
   showGainsCheckbox.checked = res.showGains !== false; // Varsayılan: true
   enablePdfCleanupCheckbox.checked = res.enablePdfCleanup !== false; // Varsayılan: true
-  enableOcrCheckbox.checked = res.enableOcr === true; // Varsayılan: false
   
   // PDF işleme yöntemlerini ayarla (Array olarak, varsayılan: boş)
   const methods = res.pdfProcessingMethods || [];
@@ -46,7 +44,6 @@ document.getElementById('save').addEventListener('click', () => {
     excludeWords: excludeWordsInput.value.trim(),
     showGains: showGainsCheckbox.checked,
     enablePdfCleanup: enablePdfCleanupCheckbox.checked,
-    enableOcr: enableOcrCheckbox.checked,
     pdfProcessingMethods: pdfProcessingMethods
   };
   
@@ -89,11 +86,10 @@ excludeWordsInput.addEventListener('input', () => {
 
 // Test butonu - ayarları kontrol et
 document.getElementById('test-settings').addEventListener('click', () => {
-  chrome.storage.sync.get(['selectedFont', 'defaultWPM', 'excludeWords', 'showGains', 'enablePdfCleanup', 'enableOcr', 'pdfProcessingMethods'], (res) => {
+  chrome.storage.sync.get(['selectedFont', 'defaultWPM', 'excludeWords', 'showGains', 'enablePdfCleanup', 'pdfProcessingMethods'], (res) => {
     const excludeWordsDisplay = res.excludeWords && res.excludeWords.trim() ? res.excludeWords : 'Yok';
     const showGainsDisplay = res.showGains !== false ? 'Açık ✅' : 'Kapalı ❌';
     const pdfCleanupDisplay = res.enablePdfCleanup !== false ? 'Açık ✅' : 'Kapalı ❌';
-    const ocrDisplay = res.enableOcr === true ? 'Açık ✅' : 'Kapalı ❌';
     
     // PDF işleme yöntemleri display (array)
     const methodMap = {
@@ -113,7 +109,6 @@ document.getElementById('test-settings').addEventListener('click', () => {
       🚫 Hariç Kelimeler: ${excludeWordsDisplay}<br>
       📈 Kazanım Göster: ${showGainsDisplay}<br>
       🔧 PDF Türkçe Düzeltme: ${pdfCleanupDisplay}<br>
-      👁️ Tesseract OCR: ${ocrDisplay}<br>
       🔧 PDF İşleme Yöntemleri: ${methodDisplay}
     `;
     status.style.color = '#17a2b8';
