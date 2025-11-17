@@ -130,7 +130,19 @@
     </div>
     
     <div class="setting-group">
-      <h3>🔧 PDF Metin Temizleme</h3>
+      <h3>📄 PDF Ayarları</h3>
+      
+      <label>PDF Metin Çıkarma Motoru:
+        <select id="pdf-extraction-method">
+          <option value="standard">Standart (PDF.js textContent)</option>
+          <option value="enhanced">Gelişmiş (textContent + normalizeWhitespace)</option>
+          <option value="raw">Ham Metin (Raw text items)</option>
+        </select>
+        <small>• <strong>Standart:</strong> Normal PDF.js metin çıkarma (varsayılan)<br>
+        • <strong>Gelişmiş:</strong> Boşluk normalizasyonu ile daha temiz metin<br>
+        • <strong>Ham Metin:</strong> Filtresiz ham çıktı (temizleme manuel yapılır)</small>
+      </label>
+      
       <label>
         <input type="checkbox" id="enable-pdf-cleanup" style="width:auto;margin:0 5px 0 0;">
         PDF Metin Temizlemeyi Etkinleştir

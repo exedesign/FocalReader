@@ -459,7 +459,12 @@
         for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
         console.log(`Processing page ${pageNum}/${pdf.numPages}`);
         const page = await pdf.getPage(pageNum);
-        const textContent = await page.getTextContent();
+        
+        // PDF çıkarma metodunu al
+        const extractionMethod = window.pdfCleanupSettings?.extractionMethod || 'standard';
+        const textContent = await page.getTextContent({
+          normalizeWhitespace: extractionMethod === 'enhanced'
+        });
         
         // Türkçe karakterleri düzgün çıkarmak için gelişmiş işleme
         const pageText = textContent.items.map(item => {
@@ -467,6 +472,11 @@
           
           // Boş veya sadece whitespace içeren stringleri atla
           if (!str || !str.trim()) return '';
+          
+          // Raw metod - hiç işlem yapma
+          if (extractionMethod === 'raw') {
+            return str;
+          }
           
           // NFC normalizasyonu
           str = str.normalize('NFC');
@@ -821,7 +831,7 @@
     // Kullanıcı ayarlarını yükle
     async loadSettings(){
       return new Promise((resolve) => {
-        chrome.storage.sync.get(['defaultWPM', 'selectedFont', 'excludeWords', 'showGains', 'enablePdfCleanup', 'pdfCleanupRegex', 'pdfCleanupReplacement'], (res) => {
+        chrome.storage.sync.get(['defaultWPM', 'selectedFont', 'excludeWords', 'showGains', 'pdfExtractionMethod', 'enablePdfCleanup', 'pdfCleanupRegex', 'pdfCleanupReplacement'], (res) => {
           this.wpm = res.defaultWPM || 250;
           this.selectedFont = res.selectedFont || 'georgia';
           this.excludeWords = res.excludeWords || '';
@@ -829,13 +839,14 @@
           
           // PDF temizleme ayarlarını global değişkene kaydet
           window.pdfCleanupSettings = {
+            extractionMethod: res.pdfExtractionMethod || 'standard',
             enabled: res.enablePdfCleanup !== false, // Varsayılan: true
             regex: res.pdfCleanupRegex || '([a-zğüşıöç]+)\\s+([ğüşıöçĞÜŞİÖÇ])\\s+([a-zğüşıöç]+)',
             replacement: res.pdfCleanupReplacement || '$1$2$3'
           };
           
           this.settingsLoaded = true;
-          console.log('📋 Ayarlar yüklendi - WPM:', this.wpm, 'excludeWords:', this.excludeWords ? `"${this.excludeWords}"` : '(boş)', 'PDF Cleanup:', window.pdfCleanupSettings.enabled ? 'Açık' : 'Kapalı');
+          console.log('📋 Ayarlar yüklendi - WPM:', this.wpm, 'excludeWords:', this.excludeWords ? `"${this.excludeWords}"` : '(boş)', 'PDF Method:', window.pdfCleanupSettings.extractionMethod, 'PDF Cleanup:', window.pdfCleanupSettings.enabled ? 'Açık' : 'Kapalı');
           this.setupUI(); // UI'yi ayarlarla birlikte kur
           resolve();
         });
@@ -1176,7 +1187,12 @@
           }
           
           const page = await pdf.getPage(i);
-          const textContent = await page.getTextContent();
+          
+          // PDF çıkarma metodunu al
+          const extractionMethod = window.pdfCleanupSettings?.extractionMethod || 'standard';
+          const textContent = await page.getTextContent({
+            normalizeWhitespace: extractionMethod === 'enhanced'
+          });
           
           // Türkçe karakterleri düzgün çıkarmak için gelişmiş işleme
           const pageText = textContent.items.map(item => {
@@ -1184,6 +1200,11 @@
             
             // Boş veya sadece whitespace içeren stringleri atla
             if (!str || !str.trim()) return '';
+            
+            // Raw metod - hiç işlem yapma
+            if (extractionMethod === 'raw') {
+              return str;
+            }
             
             // NFC normalizasyonu
             str = str.normalize('NFC');
