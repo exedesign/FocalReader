@@ -553,29 +553,35 @@
       
       console.log('Text extraction completed, total length:', fullText.length);
       
-      // Kullanıcının seçtiği PDF işleme yöntemini uygula
+      // Kullanıcının seçtiği PDF işleme yöntemlerini sırayla uygula
       let processedText = fullText.trim();
-      const processingMethod = window.pdfCleanupSettings?.processingMethod || 'standard';
+      const processingMethods = window.pdfCleanupSettings?.processingMethods || [];
       
-      console.log('🔧 Applying PDF processing method:', processingMethod);
-      
-      if (processingMethod === 'characterFix') {
-        // Yöntem 1: Türkçe karakter düzeltme (OCR hataları için)
-        processedText = fixTurkishCharacters(processedText);
-        console.log('✅ Character fix applied');
-      } else if (processingMethod === 'normalize') {
-        // Yöntem 2: Metin normalleştirme (düz metinler için)
-        processedText = normalizeText(processedText);
-        console.log('✅ Text normalization applied');
-      } else if (processingMethod === 'dialogue') {
-        // Yöntem 3: Diyalog çıkarma (senaryo formatı için)
-        processedText = extractDialogue(processedText);
-        console.log('✅ Dialogue extraction applied');
-      } else {
-        // Standart: Mevcut düzeltmeler zaten uygulandı
-        console.log('✅ Standard processing (no additional method)');
+      if (processingMethods.length === 0) {
+        console.log('🔧 No additional PDF processing methods selected');
+        return processedText;
       }
       
+      console.log('🔧 Applying PDF processing methods:', processingMethods.join(' → '));
+      
+      // Yöntemleri sırayla uygula: characterFix → normalize → dialogue
+      for (const method of processingMethods) {
+        if (method === 'characterFix') {
+          // Yöntem 1: Türkçe karakter düzeltme (OCR hataları için)
+          processedText = fixTurkishCharacters(processedText);
+          console.log('✅ Character fix applied');
+        } else if (method === 'normalize') {
+          // Yöntem 2: Metin normalleştirme (düz metinler için)
+          processedText = normalizeText(processedText);
+          console.log('✅ Text normalization applied');
+        } else if (method === 'dialogue') {
+          // Yöntem 3: Diyalog çıkarma (senaryo formatı için)
+          processedText = extractDialogue(processedText);
+          console.log('✅ Dialogue extraction applied');
+        }
+      }
+      
+      console.log('✅ All selected methods applied successfully');
       return processedText;
       
     } catch (error) {
@@ -1013,7 +1019,7 @@
     // Kullanıcı ayarlarını yükle
     async loadSettings(){
       return new Promise((resolve) => {
-        chrome.storage.sync.get(['defaultWPM', 'selectedFont', 'excludeWords', 'showGains', 'enablePdfCleanup', 'enableOcr', 'pdfProcessingMethod'], (res) => {
+        chrome.storage.sync.get(['defaultWPM', 'selectedFont', 'excludeWords', 'showGains', 'enablePdfCleanup', 'enableOcr', 'pdfProcessingMethods'], (res) => {
           this.wpm = res.defaultWPM || 250;
           this.selectedFont = res.selectedFont || 'georgia';
           this.excludeWords = res.excludeWords || '';
@@ -1023,11 +1029,11 @@
           window.pdfCleanupSettings = {
             enabled: res.enablePdfCleanup !== false, // Varsayılan: true
             ocrEnabled: res.enableOcr === true, // Varsayılan: false
-            processingMethod: res.pdfProcessingMethod || 'standard' // Varsayılan: standard
+            processingMethods: res.pdfProcessingMethods || [] // Varsayılan: boş array
           };
           
           this.settingsLoaded = true;
-          console.log('📋 Ayarlar yüklendi - WPM:', this.wpm, 'excludeWords:', this.excludeWords ? `"${this.excludeWords}"` : '(boş)', 'PDF Cleanup:', window.pdfCleanupSettings.enabled ? 'Açık' : 'Kapalı', 'OCR:', window.pdfCleanupSettings.ocrEnabled ? 'Açık' : 'Kapalı', 'Processing Method:', window.pdfCleanupSettings.processingMethod);
+          console.log('📋 Ayarlar yüklendi - WPM:', this.wpm, 'excludeWords:', this.excludeWords ? `"${this.excludeWords}"` : '(boş)', 'PDF Cleanup:', window.pdfCleanupSettings.enabled ? 'Açık' : 'Kapalı', 'OCR:', window.pdfCleanupSettings.ocrEnabled ? 'Açık' : 'Kapalı', 'Processing Methods:', window.pdfCleanupSettings.processingMethods.join(', ') || 'Yok');
           this.setupUI(); // UI'yi ayarlarla birlikte kur
           resolve();
         });

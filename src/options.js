@@ -9,13 +9,12 @@ const showGainsCheckbox = document.getElementById('show-gains');
 const enablePdfCleanupCheckbox = document.getElementById('enable-pdf-cleanup');
 const enableOcrCheckbox = document.getElementById('enable-ocr');
 
-// PDF metin işleme yöntemi radio buttonları
-const pdfMethodStandard = document.getElementById('pdf-method-standard');
+// PDF metin işleme yöntemi checkbox'ları
 const pdfMethodCharacterFix = document.getElementById('pdf-method-character-fix');
 const pdfMethodNormalize = document.getElementById('pdf-method-normalize');
 const pdfMethodDialogue = document.getElementById('pdf-method-dialogue');
 
-chrome.storage.sync.get(['selectedFont', 'defaultWPM', 'excludeWords', 'showGains', 'enablePdfCleanup', 'enableOcr', 'pdfProcessingMethod'], (res) => {
+chrome.storage.sync.get(['selectedFont', 'defaultWPM', 'excludeWords', 'showGains', 'enablePdfCleanup', 'enableOcr', 'pdfProcessingMethods'], (res) => {
   console.log('Options loading settings:', res);
   fontSelect.value = res.selectedFont || 'georgia';
   wpmInput.value = res.defaultWPM || 250;
@@ -24,23 +23,22 @@ chrome.storage.sync.get(['selectedFont', 'defaultWPM', 'excludeWords', 'showGain
   enablePdfCleanupCheckbox.checked = res.enablePdfCleanup !== false; // Varsayılan: true
   enableOcrCheckbox.checked = res.enableOcr === true; // Varsayılan: false
   
-  // PDF işleme yöntemini ayarla (Varsayılan: standard)
-  const method = res.pdfProcessingMethod || 'standard';
-  if (method === 'characterFix') pdfMethodCharacterFix.checked = true;
-  else if (method === 'normalize') pdfMethodNormalize.checked = true;
-  else if (method === 'dialogue') pdfMethodDialogue.checked = true;
-  else pdfMethodStandard.checked = true;
+  // PDF işleme yöntemlerini ayarla (Array olarak, varsayılan: boş)
+  const methods = res.pdfProcessingMethods || [];
+  pdfMethodCharacterFix.checked = methods.includes('characterFix');
+  pdfMethodNormalize.checked = methods.includes('normalize');
+  pdfMethodDialogue.checked = methods.includes('dialogue');
   
   console.log('Settings loaded successfully');
 });
 
 // Kaydet butonunu bağla
 document.getElementById('save').addEventListener('click', () => {
-  // Seçili PDF işleme yöntemini bul
-  let pdfProcessingMethod = 'standard';
-  if (pdfMethodCharacterFix.checked) pdfProcessingMethod = 'characterFix';
-  else if (pdfMethodNormalize.checked) pdfProcessingMethod = 'normalize';
-  else if (pdfMethodDialogue.checked) pdfProcessingMethod = 'dialogue';
+  // Seçili PDF işleme yöntemlerini array olarak topla
+  const pdfProcessingMethods = [];
+  if (pdfMethodCharacterFix.checked) pdfProcessingMethods.push('characterFix');
+  if (pdfMethodNormalize.checked) pdfProcessingMethods.push('normalize');
+  if (pdfMethodDialogue.checked) pdfProcessingMethods.push('dialogue');
   
   const settings = {
     selectedFont: fontSelect.value,
@@ -49,7 +47,7 @@ document.getElementById('save').addEventListener('click', () => {
     showGains: showGainsCheckbox.checked,
     enablePdfCleanup: enablePdfCleanupCheckbox.checked,
     enableOcr: enableOcrCheckbox.checked,
-    pdfProcessingMethod: pdfProcessingMethod
+    pdfProcessingMethods: pdfProcessingMethods
   };
   
   console.log('Saving settings:', settings);
@@ -91,20 +89,22 @@ excludeWordsInput.addEventListener('input', () => {
 
 // Test butonu - ayarları kontrol et
 document.getElementById('test-settings').addEventListener('click', () => {
-  chrome.storage.sync.get(['selectedFont', 'defaultWPM', 'excludeWords', 'showGains', 'enablePdfCleanup', 'enableOcr', 'pdfProcessingMethod'], (res) => {
+  chrome.storage.sync.get(['selectedFont', 'defaultWPM', 'excludeWords', 'showGains', 'enablePdfCleanup', 'enableOcr', 'pdfProcessingMethods'], (res) => {
     const excludeWordsDisplay = res.excludeWords && res.excludeWords.trim() ? res.excludeWords : 'Yok';
     const showGainsDisplay = res.showGains !== false ? 'Açık ✅' : 'Kapalı ❌';
     const pdfCleanupDisplay = res.enablePdfCleanup !== false ? 'Açık ✅' : 'Kapalı ❌';
     const ocrDisplay = res.enableOcr === true ? 'Açık ✅' : 'Kapalı ❌';
     
-    // PDF işleme yöntemi display
+    // PDF işleme yöntemleri display (array)
     const methodMap = {
-      'standard': 'Standart',
-      'characterFix': 'Türkçe Karakter Düzeltme',
-      'normalize': 'Metin Normalleştirme',
+      'characterFix': 'Karakter Düzeltme',
+      'normalize': 'Normalleştirme',
       'dialogue': 'Diyalog Çıkarma'
     };
-    const methodDisplay = methodMap[res.pdfProcessingMethod] || 'Standart';
+    const methods = res.pdfProcessingMethods || [];
+    const methodDisplay = methods.length > 0 
+      ? methods.map(m => methodMap[m]).join(', ') 
+      : 'Yok';
     
     status.innerHTML = `
       <strong>📊 Mevcut Ayarlar:</strong><br>
@@ -114,7 +114,7 @@ document.getElementById('test-settings').addEventListener('click', () => {
       📈 Kazanım Göster: ${showGainsDisplay}<br>
       🔧 PDF Türkçe Düzeltme: ${pdfCleanupDisplay}<br>
       👁️ Tesseract OCR: ${ocrDisplay}<br>
-      🔧 PDF İşleme Yöntemi: ${methodDisplay}
+      🔧 PDF İşleme Yöntemleri: ${methodDisplay}
     `;
     status.style.color = '#17a2b8';
     status.style.borderLeftColor = '#17a2b8';
