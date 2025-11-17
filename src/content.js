@@ -819,9 +819,9 @@
           </div>
         </div>
         <div id="spritz-progress-container">
-          <div id="spritz-progress-text">0%</div>
           <div id="spritz-progress-bar">
             <div id="spritz-progress-fill"></div>
+            <div id="spritz-progress-text">0%</div>
           </div>
         </div>
         <div id="spritz-controls">
